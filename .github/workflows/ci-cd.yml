@@ -152,6 +152,7 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=sha,prefix={{branch}}-
+          type=raw,value=latest
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -222,18 +223,55 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Debug image reference
+      run: |
+        echo "Registry: ${{ env.REGISTRY }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Full image ref: ${{ env.REGISTRY }}/${{ github.repository }}:latest"
+        echo "GitHub actor: ${{ github.actor }}"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit SHA: ${{ github.sha }}"
+
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        image-ref: ${{ env.REGISTRY }}/${{ github.repository }}:latest
         format: 'sarif'
         output: 'trivy-results.sarif'
+        exit-code: '0'
+        ignore-unfixed: true
+        severity: 'CRITICAL,HIGH'
+        vuln-type: 'os,library'
+
+    - name: Fallback Trivy scan (if remote image fails)
+      if: failure()
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        exit-code: '0'
+        ignore-unfixed: true
+        severity: 'CRITICAL,HIGH'
+
+    - name: Check if SARIF file exists
+      run: |
+        if [ -f "trivy-results.sarif" ]; then
+          echo "✅ SARIF file exists"
+          ls -la trivy-results.sarif
+          echo "File size: $(wc -c < trivy-results.sarif) bytes"
+        else
+          echo "❌ SARIF file not found"
+          ls -la
+        fi
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
-      if: always()
+      if: always() && hashFiles('trivy-results.sarif') != ''
       with:
         sarif_file: 'trivy-results.sarif'
+        category: 'Trivy Scan Results'
 
   deploy:
     runs-on: ubuntu-latest

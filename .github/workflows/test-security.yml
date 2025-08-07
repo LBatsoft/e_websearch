@@ -1,0 +1,48 @@
+name: Test Security Scan
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-security:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Debug environment
+      run: |
+        echo "Repository: ${{ github.repository }}"
+        echo "Registry: ghcr.io"
+        echo "Full image ref: ghcr.io/${{ github.repository }}:latest"
+
+    - name: Test Trivy filesystem scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        exit-code: '0'
+        ignore-unfixed: true
+        severity: 'CRITICAL,HIGH'
+
+    - name: Check SARIF file
+      run: |
+        if [ -f "trivy-results.sarif" ]; then
+          echo "✅ SARIF file created successfully"
+          echo "File size: $(wc -c < trivy-results.sarif) bytes"
+          echo "First 200 characters:"
+          head -c 200 trivy-results.sarif
+        else
+          echo "❌ SARIF file not found"
+          ls -la
+        fi
+
+    - name: Upload SARIF results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always() && hashFiles('trivy-results.sarif') != ''
+      with:
+        sarif_file: 'trivy-results.sarif'
+        category: 'Test Trivy Scan'
