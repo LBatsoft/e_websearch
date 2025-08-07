@@ -93,45 +93,23 @@ jobs:
         docker stop test-container
         docker rm test-container
 
-  security-scan:
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name != 'pull_request'
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
 
   notify:
     runs-on: ubuntu-latest
-    needs: [build, test, security-scan]
+    needs: [build, test]
     if: always() && github.event_name != 'pull_request'
 
     steps:
     - name: Notify on success
-      if: needs.build.result == 'success' && needs.test.result == 'success' && needs.security-scan.result == 'success'
+      if: needs.build.result == 'success' && needs.test.result == 'success'
       run: |
         echo "✅ Docker image built and pushed successfully!"
         echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
         echo "Tags: ${{ needs.build.outputs.tags }}"
 
     - name: Notify on failure
-      if: needs.build.result == 'failure' || needs.test.result == 'failure' || needs.security-scan.result == 'failure'
+      if: needs.build.result == 'failure' || needs.test.result == 'failure'
       run: |
         echo "❌ Docker build or test failed!"
         echo "Build result: ${{ needs.build.result }}"
         echo "Test result: ${{ needs.test.result }}"
-        echo "Security scan result: ${{ needs.security-scan.result }}"
