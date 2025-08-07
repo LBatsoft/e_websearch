@@ -58,17 +58,35 @@ CONTENT_EXTRACT_CONFIG = {
 }
 
 # 私域搜索配置
+def _get_bool_env(key: str, default: bool = False) -> bool:
+    """获取布尔类型的环境变量"""
+    value = os.getenv(key, str(default)).lower()
+    return value in ('true', '1', 'yes', 'on')
+
+def _get_int_env(key: str, default: int) -> int:
+    """获取整数类型的环境变量"""
+    try:
+        return int(os.getenv(key, default))
+    except (TypeError, ValueError):
+        return default
+
+# 打印环境变量用于调试
+print("环境变量配置:")
+print(f"WECHAT_SEARCH_ENABLED: {os.getenv('WECHAT_SEARCH_ENABLED')}")
+print(f"WECHAT_API_URL: {os.getenv('WECHAT_API_URL')}")
+print(f"WECHAT_API_TIMEOUT: {os.getenv('WECHAT_API_TIMEOUT')}")
+
 PRIVATE_DOMAIN_CONFIG = {
     "wechat": {
-        "enabled": os.getenv("WECHAT_SEARCH_ENABLED", "false").lower() == "true",
+        "enabled": _get_bool_env("WECHAT_SEARCH_ENABLED", False),
         "api_url": os.getenv("WECHAT_API_URL", ""),
-        "timeout": int(os.getenv("WECHAT_API_TIMEOUT", 10))
+        "timeout": _get_int_env("WECHAT_API_TIMEOUT", 30)
     },
     "zhihu": {
-        "enabled": os.getenv("ZHIHU_SEARCH_ENABLED", "false").lower() == "true",
+        "enabled": _get_bool_env("ZHIHU_SEARCH_ENABLED", False),
         "api_url": os.getenv("ZHIHU_API_URL", ""),
-        "timeout": int(os.getenv("ZHIHU_API_TIMEOUT", 10))
+        "timeout": _get_int_env("ZHIHU_API_TIMEOUT", 30)
     }
-} 
+}
 # 使用 "memory" 或 "redis"
 CACHE_TYPE = os.getenv("CACHE_TYPE", "memory")

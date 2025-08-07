@@ -152,14 +152,18 @@ class ZaiSearchEngine(BaseSearchEngine):
                 if hasattr(item, 'title'):
                     title = clean_text(item.title or '')
                     url = item.link or ''
-                    snippet = clean_text(item.content or '')
+                    content = clean_text(item.content or '')
+                    # 为snippet创建合适的预览内容
+                    snippet = content[:50] if len(content) > 50 else content
                     media = item.media or ''
                     publish_date = getattr(item, 'publish_date', None)
                 else:
                     # 如果是字典格式
                     title = clean_text(item.get('title', ''))
                     url = item.get('link', '') or item.get('url', '')
-                    snippet = clean_text(item.get('content', '') or item.get('snippet', ''))
+                    content = clean_text(item.get('content', '') or item.get('snippet', ''))
+                    # 为snippet创建合适的预览内容
+                    snippet = content[:50] if len(content) > 50 else content
                     media = item.get('media', '')
                     publish_date = item.get('publish_date')
                 
@@ -184,11 +188,12 @@ class ZaiSearchEngine(BaseSearchEngine):
                         score=score,
                         publish_time=publish_time,
                         author=media,
+                        content=content,
                         metadata={
                             'media': media,
                             'publish_date': publish_date,
                             'language': 'zh',
-                            'content_size': len(snippet),
+                            'content_size': len(content),
                             'search_engine': 'search_pro'
                         }
                     )
@@ -202,11 +207,12 @@ class ZaiSearchEngine(BaseSearchEngine):
                         'score': score,
                         'publish_time': publish_time,
                         'author': media,
+                        'content': content,
                         'metadata': {
                             'media': media,
                             'publish_date': publish_date,
                             'language': 'zh',
-                            'content_size': len(snippet),
+                            'content_size': len(content),
                             'search_engine': 'search_pro'
                         }
                     }

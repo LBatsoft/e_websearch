@@ -13,6 +13,17 @@ from typing import List
 # 导入本地模块
 import sys
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# 加载环境变量
+project_root = Path(__file__).parent.parent
+env_path = project_root / '.env'
+if env_path.exists():
+    print(f"📁 加载环境配置: {env_path}")
+    load_dotenv(env_path)
+else:
+    print("⚠️  未找到 .env 文件，使用默认配置")
 
 from core.search_orchestrator import SearchOrchestrator
 from core.models import SearchRequest, SourceType

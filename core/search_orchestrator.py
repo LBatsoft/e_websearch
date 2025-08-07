@@ -13,6 +13,7 @@ from core.content_extractor import ContentExtractor
 from core.result_aggregator import ResultAggregator
 from core.cache_manager import InMemoryCacheManager, RedisCacheManager, BaseCacheManager
 from core.utils import generate_cache_key, setup_logging
+from core.relevance_scoring import HybridScorer
 from config import CACHE_TYPE, CACHE_CONFIG
 
 
@@ -27,7 +28,8 @@ class SearchOrchestrator:
         self.bing_engine = BingSearchEngine() if BingSearchEngine else None
         self.zai_engine = ZaiSearchEngine() if ZaiSearchEngine else None
         self.private_engine = PrivateDomainEngine() if PrivateDomainEngine else None
-        self.aggregator = ResultAggregator() if ResultAggregator else None
+        self.scorer = HybridScorer()
+        self.aggregator = ResultAggregator(self.scorer) if ResultAggregator else None
         self.cache_manager = self._init_cache_manager()
         
         # 引擎映射

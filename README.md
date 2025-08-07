@@ -7,7 +7,10 @@
 - **分层架构**: 核心业务逻辑 (`core`) 与API接口 (`api`) 分离，清晰、可维护、易扩展。
 - **多源搜索**: 支持Bing、ZAI、微信公众号、知乎等多个可插拔的搜索源。
 - **私域搜索**: 支持通过 API 接口对接外部的微信、知乎等私有数据集。
-- **结果聚合**: 智能去重、相关性评分、结果排序。
+- **智能评分**: 采用混合评分系统（TF-IDF + 向量模型），支持语义相似度匹配。
+- **灵活搜索**: 移除基础关键词匹配限制，提供更智能的相关性评分。
+- **智能预览**: 优化snippet和content字段，避免内容重复，提供更好的预览体验。
+- **结果聚合**: 智能去重、多维度评分、结果排序。
 - **缓存系统**: 支持内存和 Redis 两种缓存后端，可灵活配置。
 - **异步处理**: 全异步架构，支持高并发搜索。
 - **API服务**: 提供基于FastAPI的Web接口，方便集成。
@@ -42,6 +45,8 @@ e_websearch/
 pip install -r requirements.txt
 ```
 
+**注意**：首次运行时，系统会自动下载预训练的语言模型（约 100MB）用于语义相关性评分。如果您不需要向量模型评分功能，可以修改 `core/result_aggregator.py` 中的评分器配置。
+
 ### 2. 配置环境变量
 
 复制 `dotenv.example` 文件为 `.env` 并填入您的 API 密钥。
@@ -74,10 +79,12 @@ ZAI_API_KEY=your_zai_api_key_here
 # 启用微信搜索并指定其 API 地址
 # WECHAT_SEARCH_ENABLED=true
 # WECHAT_API_URL=http://your-private-data-api/wechat/search
+# WECHAT_API_TIMEOUT=30
 
 # 启用知乎搜索并指定其 API 地址
 # ZHIHU_SEARCH_ENABLED=true
 # ZHIHU_API_URL=http://your-private-data-api/zhihu/search
+# ZHIHU_API_TIMEOUT=30
 ```
 
 **重要**: `.env` 文件已被添加到 `.gitignore`，不会被提交到版本库，请放心填写。
@@ -86,10 +93,29 @@ ZAI_API_KEY=your_zai_api_key_here
 
 本系统可以将微信、知乎等私域数据源作为搜索结果的一部分。为此，您需要：
 
-1.  **准备一个私域数据 API**: 您需要自行搭建一个 API 服务，该服务能够接收 `GET` 请求，并通过 `query` 参数查询您的私域数据（例如，从您自己的数据库或 Elasticsearch 集群中查询）。
+1.  **准备一个私域数据 API**: 您需要自行搭建一个 API 服务，该服务能够接收 `POST` 请求，并通过 JSON body 中的 `query` 参数查询您的私域数据（例如，从您自己的数据库或 Elasticsearch 集群中查询）。
 2.  **配置 API 地址**: 在 `.env` 文件中，取消注释并设置 `WECHAT_SEARCH_ENABLED` 和 `WECHAT_API_URL` (或知乎对应的变量) 来启用并指定您的 API 端点。
 
-您的 API 应返回一个 JSON 数组，其中每个对象都包含 `title`, `url`, `content` 等字段。具体格式可以参考 `core/engines/private_domain_engine.py` 中的 `parse_item` 方法。
+#### 微信私域搜索API格式
+
+您的微信API应返回以下格式的JSON响应：
+
+```json
+{
+    "articles": [
+        {
+            "title": "文章标题",
+            "link": "https://mp.weixin.qq.com/s?...",
+            "account": "公众号名称",
+            "publish_time": "2023-12-08 12:15",
+            "summary": "文章摘要内容...",
+            "content_markdown": "完整的文章内容..."
+        }
+    ]
+}
+```
+
+系统会自动适配不同的API响应格式，优先使用 `articles` 键，备选 `data` 或 `results` 键。
 
 ### 4. 运行服务
 
@@ -187,10 +213,45 @@ if __name__ == "__main__":
 1.  修改 `core.content_extractor.ContentExtractor` 类。
 2.  实现 `_extract_main_content` 方法，添加针对特定网站的提取规则。
 
-### 自定义结果聚合
+### 自定义相关性评分
 
-1.  修改 `core.result_aggregator.ResultAggregator` 类。
-2.  调整 `aggregate_results` 方法中的评分或去重算法。
+系统提供了一个强大的混合评分系统，结合了 TF-IDF 和向量模型的优势：
+
+1. **TF-IDF 评分器** (`TfidfScorer`)
+   - 基于词频-逆文档频率
+   - 支持单词和双词组合（n-gram）
+   - 适合精确匹配场景
+
+2. **向量模型评分器** (`VectorScorer`)
+   - 使用预训练的多语言模型
+   - 支持跨语言语义匹配
+   - 更好地理解同义词和相关概念
+
+3. **混合评分器** (`HybridScorer`)
+   - 智能结合 TF-IDF 和向量模型
+   - 可调节的权重配置
+   - 标题和摘要的差异化权重
+
+要自定义评分系统，您可以：
+
+1. 继承 `core.relevance_scoring.BaseScorer` 创建新的评分器
+2. 修改 `core.result_aggregator.ResultAggregator` 中的评分权重
+3. 在 `SearchOrchestrator` 中使用自定义评分器
+
+示例：创建自定义评分器
+
+```python
+from core.relevance_scoring import BaseScorer
+
+class MyCustomScorer(BaseScorer):
+    def calculate_score(self, query: str, title: str, snippet: str) -> float:
+        # 实现您的评分逻辑
+        score = 0.0
+        # ...
+        return score
+
+# 在 SearchOrchestrator 中使用
+orchestrator = SearchOrchestrator(scorer=MyCustomScorer())
 
 ## 许可证
 
@@ -199,3 +260,24 @@ MIT License
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！
+
+## 最新更新
+
+### v1.2.0 - 搜索优化和私域搜索适配
+
+#### 🚀 新功能
+- **移除关键词匹配限制**: 所有搜索引擎不再要求搜索结果必须包含查询关键词
+- **智能预览优化**: 优化 `snippet` 和 `content` 字段，避免内容重复
+- **微信私域搜索适配**: 完全适配微信API的实际返回格式
+- **灵活API解析**: 支持多种API响应格式的自动适配
+
+#### 🔧 技术改进
+- **snippet长度优化**: 统一所有搜索引擎的snippet截取长度为50字符
+- **字段映射优化**: 正确提取微信API的 `title`、`link`、`account`、`summary` 等字段
+- **智能内容选择**: 优先使用API提供的摘要字段，备选截取内容
+- **错误处理增强**: 改进API响应解析的错误处理和日志记录
+
+#### 📝 文档更新
+- 更新了微信私域搜索的API格式说明
+- 添加了搜索优化特性的详细说明
+- 完善了环境变量配置示例

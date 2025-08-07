@@ -7,15 +7,24 @@ import uvicorn
 import argparse
 import sys
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 
 
 def main():
     """主函数"""
     # 将项目根目录添加到 sys.path
-    from pathlib import Path
     project_root = Path(__file__).parent
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
+    
+    # 加载环境变量
+    env_path = project_root / '.env'
+    if env_path.exists():
+        print(f"📁 加载环境配置: {env_path}")
+        load_dotenv(env_path)
+    else:
+        print("⚠️  未找到 .env 文件，使用默认配置")
 
     parser = argparse.ArgumentParser(description="E-WebSearch API 服务")
     parser.add_argument("--host", default="0.0.0.0", help="服务器主机地址")

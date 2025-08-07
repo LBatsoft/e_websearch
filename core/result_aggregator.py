@@ -4,10 +4,20 @@
 
 from typing import List, Dict
 from .models import SearchResult, SearchRequest, SourceType
+# 暂时注释掉新的评分系统，直到依赖安装完成
+# from .relevance_scoring import BaseScorer, HybridScorer
 
 
 class ResultAggregator:
     """结果聚合器"""
+    
+    def __init__(self, scorer=None):
+        """初始化结果聚合器
+        
+        Args:
+            scorer: 相关性评分器（暂时未使用）
+        """
+        self.scorer = None  # 暂时禁用评分器
     
     def aggregate_results(self, results_by_source: Dict[SourceType, List[SearchResult]], 
                          request: SearchRequest) -> List[SearchResult]:
@@ -27,6 +37,15 @@ class ResultAggregator:
             if result.url not in seen_urls:
                 seen_urls.add(result.url)
                 unique_results.append(result)
+        
+        # 如果有评分器就使用评分器，否则保持原始得分
+        if self.scorer:
+            for result in unique_results:
+                result.score = self.scorer.calculate_score(
+                    query=request.query,
+                    title=result.title,
+                    snippet=result.snippet
+                )
         
         # 按得分排序
         unique_results.sort(key=lambda x: x.score, reverse=True)

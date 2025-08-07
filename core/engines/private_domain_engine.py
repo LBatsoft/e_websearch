@@ -69,17 +69,43 @@ class BasePrivateSearcher(ABC):
         
         try:
             async with aiohttp.ClientSession() as session:
-                params = {'query': request.query, 'max_results': request.max_results}
-                async with session.get(self.api_url, params=params, timeout=self.timeout) as response:
-                    response.raise_for_status()
-                    api_results = await response.json()
+                data = {'query': request.query}
+                headers = {'Content-Type': 'application/json'}
+                
+                logger.info(f"发送请求到 {self.api_url}, 数据: {data}")
+                async with session.post(self.api_url, json=data, headers=headers, timeout=self.timeout) as response:
+                    response_text = await response.text()
+                    logger.info(f"收到响应: {response.status} - {response_text[:200]}")
+                    
+                    if response.status >= 400:
+                        logger.error(f"API 错误响应: {response.status} - {response_text}")
+                        return []
+                    
+                    try:
+                        api_results = await response.json()
+                        logger.info(f"解析的 JSON 响应: {str(api_results)[:200]}")
+                    except Exception as e:
+                        logger.error(f"JSON 解析失败: {e}, 原始响应: {response_text[:200]}")
+                        return []
+                    
+                    # 处理不同的响应格式
+                    items = []
+                    if isinstance(api_results, dict):
+                        # 适配微信API的实际返回结构，优先查找articles键
+                        items = api_results.get('articles', []) or api_results.get('data', []) or api_results.get('results', [])
+                        logger.info(f"从字典响应中提取到 {len(items)} 个结果")
+                    elif isinstance(api_results, list):
+                        items = api_results
+                        logger.info(f"从列表响应中提取到 {len(items)} 个结果")
                     
                     parsed_results = [
                         self.parse_item(item, request.query)
-                        for item in api_results
+                        for item in items
                     ]
                     # 过滤掉解析失败的结果 (None)
-                    return [res for res in parsed_results if res]
+                    valid_results = [res for res in parsed_results if res]
+                    logger.info(f"成功解析 {len(valid_results)}/{len(items)} 个结果")
+                    return valid_results
 
         except aiohttp.ClientError as e:
             logger.error(f"{self.source_type.value} API 请求失败: {e}")
@@ -99,34 +125,69 @@ class WeChatSearcher(BasePrivateSearcher):
 
     def parse_item(self, item: Dict[str, Any], query: str) -> Optional[SearchResult]:
         try:
+            logger.debug(f"开始解析条目: {str(item)[:200]}")
+            
+            # 适配微信API的实际返回格式
             title = clean_text(item.get('title', ''))
-            content = clean_text(item.get('content', '') or item.get('digest', ''))
-            url = item.get('url', '')
+            # 优先使用summary，如果没有则使用content_markdown
+            content = clean_text(item.get('summary', '') or item.get('content_markdown', '') or item.get('content', '') or item.get('digest', '') or item.get('description', ''))
+            url = item.get('link', '') or item.get('url', '')
+            
+            logger.debug(f"提取的字段 - 标题: {title[:50]}, URL: {url}, 内容长度: {len(content)}")
             
             if not title or not url:
+                logger.warning(f"跳过条目：标题或URL为空 - 标题: {title[:30]}, URL: {url[:50]}")
                 return None
             
-            # 基础关键词匹配
-            if not any(keyword.lower() in title.lower() or keyword.lower() in content.lower() for keyword in query.split()):
-                return None
+            # 移除基础关键词匹配，让搜索更加灵活
+            logger.debug(f"跳过基础关键词匹配检查，直接进行相关性评分")
 
             score = calculate_relevance_score(query, title, content)
+            logger.debug(f"计算得分: {score:.2f} - 标题: {title[:50]}")
             if score < 0.1:
+                logger.debug(f"跳过条目：得分过低 ({score:.2f}) - 标题: {title[:50]}")
                 return None
             
-            publish_time_str = item.get('publish_time') or item.get('create_time')
+            # 处理发布时间
+            publish_time_str = (
+                item.get('publish_time') or 
+                item.get('create_time') or 
+                item.get('publishTime') or 
+                item.get('createTime')
+            )
             publish_time = parse_publish_time(str(publish_time_str)) if publish_time_str else None
 
+            # 处理作者信息 - 适配微信API的account字段
+            author = (
+                item.get('account', '') or  # 直接使用account字段
+                item.get('author') or 
+                item.get('nickname') or 
+                item.get('authorName') or 
+                item.get('account', {}).get('name')
+            )
+
+            # 处理元数据 - 适配微信API的account字段
+            metadata = {
+                'account': item.get('account', ''),  # 直接使用account字段
+                'platform': item.get('platform', 'wechat'),
+                'likes': item.get('likes', 0),
+                'reads': item.get('reads', 0)
+            }
+
+            # 为snippet创建更合适的预览内容
+            # 优先使用summary作为snippet，如果没有则截取content的前200字符
+            snippet_content = item.get('summary', '') or content[:50]
+            
             return SearchResult(
                 title=title,
                 url=url,
-                snippet=content[:200],
+                snippet=snippet_content,
                 source=self.source_type,
                 score=score,
                 publish_time=publish_time,
-                author=item.get('author') or item.get('nickname'),
+                author=author,
                 content=content,
-                metadata={'account': item.get('account', '')}
+                metadata=metadata
             )
         except Exception as e:
             logger.error(f"解析微信文章出错: {item.get('title', '')} - {e}")
@@ -147,17 +208,20 @@ class ZhihuSearcher(BasePrivateSearcher):
             if not title or not url:
                 return None
                 
-            if not any(keyword.lower() in title.lower() or keyword.lower() in content.lower() for keyword in query.split()):
-                return None
+            # 移除基础关键词匹配，让搜索更加灵活
 
             score = calculate_relevance_score(query, title, content)
             if score < 0.1:
                 return None
 
+            # 为知乎内容创建合适的snippet
+            # 优先使用摘要字段，如果没有则截取content的前50字符
+            snippet_content = item.get('excerpt', '') or item.get('summary', '') or content[:50]
+            
             return SearchResult(
                 title=title,
                 url=url,
-                snippet=content[:200],
+                snippet=snippet_content,
                 source=self.source_type,
                 score=score,
                 author=item.get('author'),
