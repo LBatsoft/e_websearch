@@ -4,12 +4,12 @@
 
 import time
 import json
-import redis.async_as aio_redis
+import redis.asyncio as aio_redis
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from loguru import logger
 
-from .models import SearchResult
+from core.models import SearchResult
 from config import REDIS_CONFIG, CACHE_CONFIG
 
 

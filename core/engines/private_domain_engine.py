@@ -8,10 +8,11 @@ import json
 from typing import List, Dict, Any, Optional
 from loguru import logger
 
-from .base_engine import BaseSearchEngine
-from ..models import SearchResult, SearchRequest, SourceType
-from ..config import PRIVATE_DOMAIN_CONFIG
-from ..utils import clean_text, calculate_relevance_score, parse_publish_time
+from core.engines.base_engine import BaseSearchEngine
+from abc import ABC, abstractmethod
+from config import PRIVATE_DOMAIN_CONFIG
+from core.models import SearchResult, SearchRequest, SourceType
+from core.utils import clean_text, calculate_relevance_score, parse_publish_time
 
 
 class PrivateDomainEngine(BaseSearchEngine):

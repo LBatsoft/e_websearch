@@ -9,9 +9,9 @@ from datetime import datetime
 from loguru import logger
 
 from .base_engine import BaseSearchEngine
-from ..models import SearchResult, SearchRequest, SourceType
-from ..config import BING_SEARCH_URL, BING_API_KEY
-from ..utils import clean_text, calculate_relevance_score, parse_publish_time, RateLimiter
+from config import BING_SEARCH_URL, BING_API_KEY
+from core.models import SearchResult, SearchRequest, SourceType
+from core.utils import clean_text, calculate_relevance_score, parse_publish_time, RateLimiter
 
 
 class BingSearchEngine(BaseSearchEngine):

@@ -7,12 +7,12 @@ import time
 from typing import List, Dict
 from loguru import logger
 
-from .models import SearchRequest, SearchResponse, SearchResult, SourceType
-from .engines import BingSearchEngine, ZaiSearchEngine, PrivateDomainEngine
-from .content_extractor import ContentExtractor
-from .result_aggregator import ResultAggregator
-from .cache_manager import InMemoryCacheManager, RedisCacheManager, BaseCacheManager
-from .utils import generate_cache_key, setup_logging
+from core.models import SearchRequest, SearchResponse, SearchResult, SourceType
+from core.engines import BingSearchEngine, ZaiSearchEngine, PrivateDomainEngine
+from core.content_extractor import ContentExtractor
+from core.result_aggregator import ResultAggregator
+from core.cache_manager import InMemoryCacheManager, RedisCacheManager, BaseCacheManager
+from core.utils import generate_cache_key, setup_logging
 from config import CACHE_TYPE, CACHE_CONFIG
 
 
