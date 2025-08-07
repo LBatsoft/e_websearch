@@ -10,16 +10,16 @@ from .models import (
     SearchResultAPI,
     SourceTypeAPI,
     HealthCheckResponse,
-    ErrorResponse
+    ErrorResponse,
 )
 
 __version__ = "1.0.0"
 __all__ = [
     "app",
     "SearchRequestAPI",
-    "SearchResponseAPI", 
+    "SearchResponseAPI",
     "SearchResultAPI",
     "SourceTypeAPI",
     "HealthCheckResponse",
-    "ErrorResponse"
+    "ErrorResponse",
 ]

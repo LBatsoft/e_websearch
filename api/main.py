@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 
 # 加载环境变量
 project_root = Path(__file__).parent.parent
-env_path = project_root / '.env'
+env_path = project_root / ".env"
 if env_path.exists():
     print(f"📁 加载环境配置: {env_path}")
     load_dotenv(env_path)
@@ -28,9 +28,16 @@ else:
 from core.search_orchestrator import SearchOrchestrator
 from core.models import SearchRequest, SourceType
 from .models import (
-    SearchRequestAPI, SearchResponseAPI, SearchResultAPI, SourceTypeAPI,
-    HealthCheckResponse, ErrorResponse, SuggestionsRequest, SuggestionsResponse,
-    StatisticsResponse, CacheOperationResponse
+    SearchRequestAPI,
+    SearchResponseAPI,
+    SearchResultAPI,
+    SourceTypeAPI,
+    HealthCheckResponse,
+    ErrorResponse,
+    SuggestionsRequest,
+    SuggestionsResponse,
+    StatisticsResponse,
+    CacheOperationResponse,
 )
 
 
@@ -42,7 +49,7 @@ search_orchestrator = None
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     global search_orchestrator
-    
+
     # 启动时初始化
     print("🚀 初始化 E-WebSearch API 服务...")
     try:
@@ -52,9 +59,9 @@ async def lifespan(app: FastAPI):
         print(f"❌ 搜索协调器初始化失败: {e}")
         traceback.print_exc()
         search_orchestrator = None
-    
+
     yield
-    
+
     # 关闭时清理
     print("🔄 关闭 E-WebSearch API 服务...")
     if search_orchestrator:
@@ -69,7 +76,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # 添加 CORS 中间件
@@ -87,17 +94,17 @@ def get_orchestrator():
     if search_orchestrator is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="搜索服务暂时不可用，请稍后重试"
+            detail="搜索服务暂时不可用，请稍后重试",
         )
     return search_orchestrator
 
 
 def convert_source_type(source: SourceTypeAPI):
     """转换 API 源类型到内部源类型"""
-    if 'SourceType' not in globals():
+    if "SourceType" not in globals():
         # 如果 SourceType 未定义，返回字符串值
         return source.value
-    
+
     mapping = {
         SourceTypeAPI.BING: SourceType.BING,
         SourceTypeAPI.ZAI: SourceType.ZAI,
@@ -113,7 +120,7 @@ def convert_api_source_type(source) -> SourceTypeAPI:
     """转换内部源类型到 API 源类型"""
     if isinstance(source, str):
         # 特殊处理 mock 源
-        if source == 'mock':
+        if source == "mock":
             return SourceTypeAPI.CUSTOM
         # 如果是字符串，直接转换
         try:
@@ -121,10 +128,10 @@ def convert_api_source_type(source) -> SourceTypeAPI:
         except ValueError:
             # 如果无法转换，返回自定义类型
             return SourceTypeAPI.CUSTOM
-    
-    if 'SourceType' not in globals():
+
+    if "SourceType" not in globals():
         return SourceTypeAPI.CUSTOM
-    
+
     mapping = {
         SourceType.BING: SourceTypeAPI.BING,
         SourceType.ZAI: SourceTypeAPI.ZAI,
@@ -141,17 +148,17 @@ async def global_exception_handler(request, exc):
     """全局异常处理器"""
     error_detail = str(exc)
     error_traceback = traceback.format_exc()
-    
+
     print(f"❌ API 错误: {error_detail}")
     print(f"📍 错误堆栈: {error_traceback}")
-    
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ErrorResponse(
             error="InternalServerError",
             message="服务器内部错误",
-            details={"error": error_detail}
-        ).dict()
+            details={"error": error_detail},
+        ).dict(),
     )
 
 
@@ -169,77 +176,77 @@ async def root():
             "health": "/health",
             "suggestions": "/suggestions",
             "statistics": "/statistics",
-            "cache": "/cache"
-        }
+            "cache": "/cache",
+        },
     }
 
 
 @app.post("/search", response_model=SearchResponseAPI)
-async def search(
-    request: SearchRequestAPI,
-    orchestrator = Depends(get_orchestrator)
-):
+async def search(request: SearchRequestAPI, orchestrator=Depends(get_orchestrator)):
     """执行搜索"""
     try:
         start_time = time.time()
-        
+
         # 转换 API 请求到内部请求
         internal_sources = [convert_source_type(source) for source in request.sources]
-        
-        if 'SearchRequest' in globals() and SearchRequest:
+
+        if "SearchRequest" in globals() and SearchRequest:
             internal_request = SearchRequest(
                 query=request.query,
                 max_results=request.max_results,
                 include_content=request.include_content,
                 sources=internal_sources,
-                filters=request.filters
+                filters=request.filters,
             )
         else:
             # 如果 SearchRequest 不可用，创建简单的字典结构
             internal_request = {
-                'query': request.query,
-                'max_results': request.max_results,
-                'include_content': request.include_content,
-                'sources': internal_sources,
-                'filters': request.filters
+                "query": request.query,
+                "max_results": request.max_results,
+                "include_content": request.include_content,
+                "sources": internal_sources,
+                "filters": request.filters,
             }
-        
+
         # 执行搜索
         response = await orchestrator.search(internal_request)
-        
+
         # 处理响应（可能是字典或对象）
         if isinstance(response, dict):
             # 处理字典响应（模拟搜索）
-            results_data = response.get('results', [])
+            results_data = response.get("results", [])
             api_results = []
-            
+
             for result in results_data:
                 if isinstance(result, dict):
                     api_result = SearchResultAPI(
-                        title=result.get('title', ''),
-                        url=result.get('url', ''),
-                        snippet=result.get('snippet', ''),
-                        source=convert_api_source_type(result.get('source', 'mock')),
-                        score=result.get('score', 0.0),
-                        publish_time=result.get('publish_time'),
-                        author=result.get('author'),
-                        content=result.get('content'),
-                        images=result.get('images', []),
-                        metadata=result.get('metadata', {})
+                        title=result.get("title", ""),
+                        url=result.get("url", ""),
+                        snippet=result.get("snippet", ""),
+                        source=convert_api_source_type(result.get("source", "mock")),
+                        score=result.get("score", 0.0),
+                        publish_time=result.get("publish_time"),
+                        author=result.get("author"),
+                        content=result.get("content"),
+                        images=result.get("images", []),
+                        metadata=result.get("metadata", {}),
                     )
                     api_results.append(api_result)
-            
-            api_sources_used = [convert_api_source_type(source) for source in response.get('sources_used', [])]
-            
+
+            api_sources_used = [
+                convert_api_source_type(source)
+                for source in response.get("sources_used", [])
+            ]
+
             return SearchResponseAPI(
-                success=response.get('success', True),
+                success=response.get("success", True),
                 message="搜索完成",
                 results=api_results,
-                total_count=response.get('total_count', len(api_results)),
-                query=response.get('query', request.query),
-                execution_time=response.get('execution_time', 0.0),
+                total_count=response.get("total_count", len(api_results)),
+                query=response.get("query", request.query),
+                execution_time=response.get("execution_time", 0.0),
                 sources_used=api_sources_used,
-                cache_hit=response.get('cache_hit', False)
+                cache_hit=response.get("cache_hit", False),
             )
         else:
             # 处理对象响应（真实搜索）
@@ -255,12 +262,14 @@ async def search(
                     author=result.author,
                     content=result.content,
                     images=result.images,
-                    metadata=result.metadata
+                    metadata=result.metadata,
                 )
                 api_results.append(api_result)
-            
-            api_sources_used = [convert_api_source_type(source) for source in response.sources_used]
-            
+
+            api_sources_used = [
+                convert_api_source_type(source) for source in response.sources_used
+            ]
+
             return SearchResponseAPI(
                 success=True,
                 message="搜索完成",
@@ -269,13 +278,13 @@ async def search(
                 query=response.query,
                 execution_time=response.execution_time,
                 sources_used=api_sources_used,
-                cache_hit=response.cache_hit
+                cache_hit=response.cache_hit,
             )
-        
+
     except Exception as e:
         error_message = f"搜索执行失败: {str(e)}"
         print(f"❌ {error_message}")
-        
+
         return SearchResponseAPI(
             success=False,
             message=error_message,
@@ -284,185 +293,159 @@ async def search(
             query=request.query,
             execution_time=time.time() - start_time,
             sources_used=[],
-            cache_hit=False
+            cache_hit=False,
         )
 
 
 @app.get("/health", response_model=HealthCheckResponse)
-async def health_check(orchestrator = Depends(get_orchestrator)):
+async def health_check(orchestrator=Depends(get_orchestrator)):
     """健康检查"""
     try:
         health_data = await orchestrator.health_check()
-        
+
         # 转换可用源类型
         available_sources = [
-            convert_api_source_type(source) 
+            convert_api_source_type(source)
             for source in orchestrator.get_available_sources()
         ]
-        
+
         return HealthCheckResponse(
-            status=health_data.get('status', 'unknown'),
-            engines=health_data.get('engines', {}),
+            status=health_data.get("status", "unknown"),
+            engines=health_data.get("engines", {}),
             available_sources=available_sources,
-            cache_enabled=health_data.get('cache_enabled', False),
-            last_search_time=health_data.get('last_search_time'),
-            error=health_data.get('error')
+            cache_enabled=health_data.get("cache_enabled", False),
+            last_search_time=health_data.get("last_search_time"),
+            error=health_data.get("error"),
         )
-        
+
     except Exception as e:
         error_message = f"健康检查失败: {str(e)}"
         print(f"❌ {error_message}")
-        
+
         return HealthCheckResponse(
             status="error",
             engines={},
             available_sources=[],
             cache_enabled=False,
             last_search_time=None,
-            error=error_message
+            error=error_message,
         )
 
 
 @app.post("/suggestions", response_model=SuggestionsResponse)
 async def get_suggestions(
-    request: SuggestionsRequest,
-    orchestrator = Depends(get_orchestrator)
+    request: SuggestionsRequest, orchestrator=Depends(get_orchestrator)
 ):
     """获取搜索建议"""
     try:
         suggestions = await orchestrator.get_search_suggestions(request.query)
-        
+
         return SuggestionsResponse(
-            success=True,
-            suggestions=suggestions,
-            query=request.query
+            success=True, suggestions=suggestions, query=request.query
         )
-        
+
     except Exception as e:
         error_message = f"获取搜索建议失败: {str(e)}"
         print(f"❌ {error_message}")
-        
-        return SuggestionsResponse(
-            success=False,
-            suggestions=[],
-            query=request.query
-        )
+
+        return SuggestionsResponse(success=False, suggestions=[], query=request.query)
 
 
 @app.get("/statistics", response_model=StatisticsResponse)
-async def get_statistics(orchestrator = Depends(get_orchestrator)):
+async def get_statistics(orchestrator=Depends(get_orchestrator)):
     """获取系统统计信息"""
     try:
         # 获取缓存统计信息
         cache_stats = await orchestrator.cache_manager.get_stats()
-        
+
         # 构建统计信息
         stats = {
-            "available_sources": [s.value for s in orchestrator.get_available_sources()],
+            "available_sources": [
+                s.value for s in orchestrator.get_available_sources()
+            ],
             "cache_enabled": orchestrator.cache_manager.enabled,
             "service_status": "running",
-            "cache_stats": cache_stats
+            "cache_stats": cache_stats,
         }
-        
-        return StatisticsResponse(
-            success=True,
-            statistics=stats
-        )
-        
+
+        return StatisticsResponse(success=True, statistics=stats)
+
     except Exception as e:
         error_message = f"获取统计信息失败: {str(e)}"
         print(f"❌ {error_message}")
-        
-        return StatisticsResponse(
-            success=False,
-            statistics={}
-        )
+
+        return StatisticsResponse(success=False, statistics={})
 
 
 @app.delete("/cache", response_model=CacheOperationResponse)
-async def clear_cache(orchestrator = Depends(get_orchestrator)):
+async def clear_cache(orchestrator=Depends(get_orchestrator)):
     """清空缓存"""
     try:
         await orchestrator.clear_cache()
-        
+
         # 获取清理后的缓存统计
         cache_stats = await orchestrator.cache_manager.get_stats()
-        cache_size = cache_stats.get('current_size', 0) if isinstance(cache_stats, dict) else 0
-        
-        return CacheOperationResponse(
-            success=True,
-            message="缓存已清空",
-            cache_size=cache_size
+        cache_size = (
+            cache_stats.get("current_size", 0) if isinstance(cache_stats, dict) else 0
         )
-        
+
+        return CacheOperationResponse(
+            success=True, message="缓存已清空", cache_size=cache_size
+        )
+
     except Exception as e:
         error_message = f"清空缓存失败: {str(e)}"
         print(f"❌ {error_message}")
-        
-        return CacheOperationResponse(
-            success=False,
-            message=error_message
-        )
+
+        return CacheOperationResponse(success=False, message=error_message)
 
 
 @app.get("/cache/stats", response_model=dict)
-async def get_cache_stats(orchestrator = Depends(get_orchestrator)):
+async def get_cache_stats(orchestrator=Depends(get_orchestrator)):
     """获取详细的缓存统计信息"""
     try:
         cache_stats = await orchestrator.cache_manager.get_stats()
-        
-        return {
-            "success": True,
-            "cache_stats": cache_stats,
-            "timestamp": time.time()
-        }
-        
+
+        return {"success": True, "cache_stats": cache_stats, "timestamp": time.time()}
+
     except Exception as e:
         error_message = f"获取缓存统计失败: {str(e)}"
         print(f"❌ {error_message}")
-        
-        return {
-            "success": False,
-            "error": error_message,
-            "cache_stats": {}
-        }
+
+        return {"success": False, "error": error_message, "cache_stats": {}}
 
 
 @app.get("/cache/health", response_model=dict)
-async def get_cache_health(orchestrator = Depends(get_orchestrator)):
+async def get_cache_health(orchestrator=Depends(get_orchestrator)):
     """获取缓存健康状态"""
     try:
         health_status = await orchestrator.cache_manager.health_check()
         cache_stats = await orchestrator.cache_manager.get_stats()
-        
+
         return {
             "success": True,
             "healthy": health_status,
-            "cache_type": cache_stats.get('type', 'unknown'),
-            "fallback_enabled": cache_stats.get('fallback_enabled', False),
-            "redis_healthy": cache_stats.get('redis_healthy', False) if cache_stats.get('type') == 'distributed' else None,
-            "timestamp": time.time()
+            "cache_type": cache_stats.get("type", "unknown"),
+            "fallback_enabled": cache_stats.get("fallback_enabled", False),
+            "redis_healthy": (
+                cache_stats.get("redis_healthy", False)
+                if cache_stats.get("type") == "distributed"
+                else None
+            ),
+            "timestamp": time.time(),
         }
-        
+
     except Exception as e:
         error_message = f"获取缓存健康状态失败: {str(e)}"
         print(f"❌ {error_message}")
-        
-        return {
-            "success": False,
-            "healthy": False,
-            "error": error_message
-        }
+
+        return {"success": False, "healthy": False, "error": error_message}
 
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     print("🚀 启动 E-WebSearch API 服务...")
     uvicorn.run(
-        "api.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        "api.main:app", host="0.0.0.0", port=8000, reload=True, log_level="info"
     )
