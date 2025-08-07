@@ -8,3 +8,21 @@ BING_API_KEY=YOUR_BING_API_KEY_HERE
 # ZAI Search Pro API 密钥 (可选)
 # Get one from: https://www.aliyun.com/product/bailian
 ZAI_API_KEY=YOUR_ZAI_API_KEY_HERE
+
+# 缓存配置 (可选, 默认使用 "memory")
+# 可选值: "memory" 或 "redis"
+# CACHE_TYPE=redis
+
+# 如果使用 Redis，可以指定连接信息 (可选)
+# REDIS_HOST=localhost
+# REDIS_PORT=6379
+# REDIS_DB=0
+
+# 私域搜索配置 (可选)
+# 启用微信搜索并指定其 API 地址
+# WECHAT_SEARCH_ENABLED=true
+# WECHAT_API_URL=http://your-private-data-api/wechat/search
+
+# 启用知乎搜索并指定其 API 地址
+# ZHIHU_SEARCH_ENABLED=true
+# ZHIHU_API_URL=http://your-private-data-api/zhihu/search

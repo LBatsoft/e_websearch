@@ -30,10 +30,11 @@ BROWSER_CONFIG = {
 }
 
 # Redis配置
+# 当在 Docker 中运行时，host 应设置为 'redis'
 REDIS_CONFIG = {
-    "host": "localhost",
-    "port": 6379,
-    "db": 0,
+    "host": os.getenv("REDIS_HOST", "localhost"),
+    "port": int(os.getenv("REDIS_PORT", 6379)),
+    "db": int(os.getenv("REDIS_DB", 0)),
     "decode_responses": True
 }
 
@@ -59,13 +60,15 @@ CONTENT_EXTRACT_CONFIG = {
 # 私域搜索配置
 PRIVATE_DOMAIN_CONFIG = {
     "wechat": {
-        "enabled": True,
-        "api_url": "http://localhost:8080/api/wechat/search",
-        "timeout": 10
+        "enabled": os.getenv("WECHAT_SEARCH_ENABLED", "false").lower() == "true",
+        "api_url": os.getenv("WECHAT_API_URL", ""),
+        "timeout": int(os.getenv("WECHAT_API_TIMEOUT", 10))
     },
     "zhihu": {
-        "enabled": True,
-        "api_url": "http://localhost:8080/api/zhihu/search", 
-        "timeout": 10
+        "enabled": os.getenv("ZHIHU_SEARCH_ENABLED", "false").lower() == "true",
+        "api_url": os.getenv("ZHIHU_API_URL", ""),
+        "timeout": int(os.getenv("ZHIHU_API_TIMEOUT", 10))
     }
 } 
+# 使用 "memory" 或 "redis"
+CACHE_TYPE = os.getenv("CACHE_TYPE", "memory")

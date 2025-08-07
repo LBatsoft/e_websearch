@@ -39,12 +39,16 @@ async def lifespan(app: FastAPI):
         print("✅ 搜索协调器初始化成功")
     except Exception as e:
         print(f"❌ 搜索协调器初始化失败: {e}")
+        traceback.print_exc()
         search_orchestrator = None
     
     yield
     
     # 关闭时清理
     print("🔄 关闭 E-WebSearch API 服务...")
+    if search_orchestrator:
+        await search_orchestrator.close()
+        print("✅ 搜索协调器已关闭")
 
 
 # 创建 FastAPI 应用
@@ -381,26 +385,6 @@ async def clear_cache(orchestrator = Depends(get_orchestrator)):
             message=error_message
         )
 
-
-@app.post("/cache/cleanup", response_model=CacheOperationResponse)
-async def cleanup_cache(orchestrator = Depends(get_orchestrator)):
-    """清理过期缓存"""
-    try:
-        orchestrator.cleanup_expired_cache()
-        
-        return CacheOperationResponse(
-            success=True,
-            message="过期缓存已清理"
-        )
-        
-    except Exception as e:
-        error_message = f"清理过期缓存失败: {str(e)}"
-        print(f"❌ {error_message}")
-        
-        return CacheOperationResponse(
-            success=False,
-            message=error_message
-        )
 
 
 if __name__ == "__main__":

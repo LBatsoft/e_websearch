@@ -8,4 +8,5 @@ redis>=5.0.0
 pydantic>=2.5.0
 loguru>=0.7.0
 selenium>=4.15.0
-zhipuai>=2.1.0 
+zhipuai>=2.1.0 redis>=4.0.0
+aioredis>=2.0.0

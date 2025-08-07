@@ -6,8 +6,6 @@ import asyncio
 import aiohttp
 import json
 from typing import List, Dict, Any, Optional
-from datetime import datetime
-from pathlib import Path
 from loguru import logger
 
 from .base_engine import BaseSearchEngine
@@ -25,278 +23,149 @@ class PrivateDomainEngine(BaseSearchEngine):
         self.wechat_searcher = WeChatSearcher(self.config.get('wechat', {}))
         self.zhihu_searcher = ZhihuSearcher(self.config.get('zhihu', {}))
     
+    def is_available(self) -> bool:
+        """检查是否有任何私域引擎是启用的"""
+        return self.wechat_searcher.enabled or self.zhihu_searcher.enabled
+
     async def search(self, request: SearchRequest) -> List[SearchResult]:
         """执行私域搜索"""
-        results = []
-        
-        # 并发执行各个私域搜索
         tasks = []
-        
-        if SourceType.WECHAT in request.sources:
+        if SourceType.WECHAT in request.sources and self.wechat_searcher.enabled:
             tasks.append(self.wechat_searcher.search(request))
         
-        if SourceType.ZHIHU in request.sources:
+        if SourceType.ZHIHU in request.sources and self.zhihu_searcher.enabled:
             tasks.append(self.zhihu_searcher.search(request))
         
-        if tasks:
-            search_results = await asyncio.gather(*tasks, return_exceptions=True)
-            
-            for result in search_results:
-                if isinstance(result, list):
-                    results.extend(result)
-                elif isinstance(result, Exception):
-                    logger.error(f"私域搜索出错: {result}")
+        if not tasks:
+            return []
+
+        results = []
+        search_results = await asyncio.gather(*tasks, return_exceptions=True)
+        for result in search_results:
+            if isinstance(result, list):
+                results.extend(result)
+            elif isinstance(result, Exception):
+                logger.error(f"私域搜索出错: {result}")
         
-        # 按得分排序
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:request.max_results]
 
 
-class WeChatSearcher:
-    """微信公众号搜索器"""
-    
-    def __init__(self, config: Dict[str, Any]):
+class BasePrivateSearcher(ABC):
+    """私域搜索器基类"""
+    def __init__(self, config: Dict[str, Any], source_type: SourceType):
         self.enabled = config.get('enabled', False)
         self.api_url = config.get('api_url', '')
         self.timeout = config.get('timeout', 10)
-    
-    async def search(self, request: SearchRequest) -> List[SearchResult]:
-        """搜索微信公众号文章"""
-        if not self.enabled or not self.api_url:
-            return []
-        
-        try:
-            # 这里可以接入您已有的微信公众号搜索API
-            # 或者搜索本地的微信文章数据库
-            results = await self._search_local_wechat_data(request)
-            logger.info(f"微信搜索完成，返回 {len(results)} 个结果")
-            return results
-            
-        except Exception as e:
-            logger.error(f"微信搜索出错: {e}")
-            return []
-    
-    async def _search_local_wechat_data(self, request: SearchRequest) -> List[SearchResult]:
-        """搜索本地微信数据"""
-        results = []
-        
-        # 这里可以接入您已有的微信数据
-        # 例如从数据库或JSON文件中搜索
-        try:
-            # 示例：从项目中的微信数据搜索
-            from pathlib import Path
-            import os
-            
-            # 搜索微信相关的JSON文件
-            base_dir = Path(__file__).parent.parent.parent
-            wechat_dirs = ['wechat', 'wewe_rss']
-            
-            for wechat_dir in wechat_dirs:
-                wechat_path = base_dir / wechat_dir
-                if wechat_path.exists():
-                    results.extend(await self._search_wechat_files(wechat_path, request))
-            
-        except Exception as e:
-            logger.error(f"搜索本地微信数据出错: {e}")
-        
-        return results
-    
-    async def _search_we3chat_files(self, path: Path, request: SearchRequest) -> List[SearchResult]:
-        """搜索微信文件"""
-        results = []
-        
-        try:
-            # 搜索JSON文件
-            for json_file in path.rglob("*.json"):
-                if json_file.stat().st_size > 1024 * 1024:  # 跳过大于1MB的文件
-                    continue
-                
-                try:
-                    with open(json_file, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                    
-                    # 如果是列表，搜索每个项目
-                    if isinstance(data, list):
-                        for item in data:
-                            result = self._parse_wechat_item(item, request.query)
-                            if result:
-                                results.append(result)
-                    elif isinstance(data, dict):
-                        result = self._parse_wechat_item(data, request.query)
-                        if result:
-                            results.append(result)
-                            
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    continue
-                    
-        except Exception as e:
-            logger.error(f"搜索微信文件出错: {e}")
-        
-        return results
-    
-    def _parse_wechat_item(self, item: Dict[str, Any], query: str) -> Optional[SearchResult]:
-        """解析微信文章项目"""
-        try:
-            title = item.get('title', '')
-            content = item.get('content', '') or item.get('digest', '') or item.get('desc', '')
-            url = item.get('url', '') or item.get('link', '')
-            
-            if not title or not any(keyword.lower() in title.lower() or 
-                                  keyword.lower() in content.lower() 
-                                  for keyword in query.split()):
-                return None
-            
-            title = clean_text(title)
-            content = clean_text(content)
-            
-            if not title:
-                return None
-            
-            score = calculate_relevance_score(query, title, content)
-            if score < 0.1:  # 相关性太低
-                return None
-            
-            # 解析发布时间
-            publish_time = None
-            for time_field in ['publish_time', 'create_time', 'datetime', 'time']:
-                if time_field in item:
-                    publish_time = parse_publish_time(str(item[time_field]))
-                    if publish_time:
-                        break
-            
-            return SearchResult(
-                title=title,
-                url=url,
-                snippet=content[:200] + "..." if len(content) > 200 else content,
-                source=SourceType.WECHAT,
-                score=score,
-                publish_time=publish_time,
-                author=item.get('author', '') or item.get('nickname', ''),
-                content=content,
-                metadata={
-                    'account': item.get('account', ''),
-                    'biz': item.get('biz', ''),
-                    'idx': item.get('idx', ''),
-                    'sn': item.get('sn', '')
-                }
-            )
-            
-        except Exception as e:
-            logger.error(f"解析微信文章出错: {e}")
-            return None
+        self.source_type = source_type
+        if self.enabled and not self.api_url:
+            logger.warning(f"{source_type.value} 搜索器已启用，但 API URL 未配置。")
+            self.enabled = False
 
-
-class ZhihuSearcher:
-    """知乎搜索器"""
-    
-    def __init__(self, config: Dict[str, Any]):
-        self.enabled = config.get('enabled', False)
-        self.api_url = config.get('api_url', '')
-        self.timeout = config.get('timeout', 10)
-    
     async def search(self, request: SearchRequest) -> List[SearchResult]:
-        """搜索知乎内容"""
         if not self.enabled:
             return []
         
         try:
-            # 搜索本地知乎数据
-            results = await self._search_local_zhihu_data(request)
-            logger.info(f"知乎搜索完成，返回 {len(results)} 个结果")
-            return results
-            
-        except Exception as e:
-            logger.error(f"知乎搜索出错: {e}")
-            return []
-    
-    async def _search_local_zhihu_data(self, request: SearchRequest) -> List[SearchResult]:
-        """搜索本地知乎数据"""
-        results = []
-        
-        try:
-            # 从项目中的知乎数据搜索
-            from pathlib import Path
-            
-            base_dir = Path(__file__).parent.parent.parent
-            zhihu_path = base_dir / 'zhihu'
-            
-            if zhihu_path.exists():
-                results.extend(await self._search_zhihu_files(zhihu_path, request))
-                
-        except Exception as e:
-            logger.error(f"搜索本地知乎数据出错: {e}")
-        
-        return results
-    
-    async def _search_zhihu_files(self, path: Path, request: SearchRequest) -> List[SearchResult]:
-        """搜索知乎文件"""
-        results = []
-        
-        try:
-            for json_file in path.glob("*.json"):
-                if json_file.stat().st_size > 1024 * 1024:  # 跳过大文件
-                    continue
-                
-                try:
-                    with open(json_file, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
+            async with aiohttp.ClientSession() as session:
+                params = {'query': request.query, 'max_results': request.max_results}
+                async with session.get(self.api_url, params=params, timeout=self.timeout) as response:
+                    response.raise_for_status()
+                    api_results = await response.json()
                     
-                    if isinstance(data, list):
-                        for item in data:
-                            result = self._parse_zhihu_item(item, request.query)
-                            if result:
-                                results.append(result)
-                    elif isinstance(data, dict):
-                        result = self._parse_zhihu_item(data, request.query)
-                        if result:
-                            results.append(result)
-                            
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    continue
-                    
+                    parsed_results = [
+                        self.parse_item(item, request.query)
+                        for item in api_results
+                    ]
+                    # 过滤掉解析失败的结果 (None)
+                    return [res for res in parsed_results if res]
+
+        except aiohttp.ClientError as e:
+            logger.error(f"{self.source_type.value} API 请求失败: {e}")
         except Exception as e:
-            logger.error(f"搜索知乎文件出错: {e}")
-        
-        return results
+            logger.error(f"{self.source_type.value} 搜索出错: {e}")
+        return []
     
-    def _parse_zhihu_item(self, item: Dict[str, Any], query: str) -> Optional[SearchResult]:
-        """解析知乎内容项目"""
+    @abstractmethod
+    def parse_item(self, item: Dict[str, Any], query: str) -> Optional[SearchResult]:
+        pass
+
+
+class WeChatSearcher(BasePrivateSearcher):
+    """微信公众号搜索器"""
+    def __init__(self, config: Dict[str, Any]):
+        super().__init__(config, SourceType.WECHAT)
+
+    def parse_item(self, item: Dict[str, Any], query: str) -> Optional[SearchResult]:
         try:
-            title = item.get('title', '') or item.get('question', '')
-            content = item.get('content', '') or item.get('answer', '') or item.get('excerpt', '')
-            url = item.get('url', '') or item.get('link', '')
+            title = clean_text(item.get('title', ''))
+            content = clean_text(item.get('content', '') or item.get('digest', ''))
+            url = item.get('url', '')
             
-            if not title or not any(keyword.lower() in title.lower() or 
-                                  keyword.lower() in content.lower() 
-                                  for keyword in query.split()):
+            if not title or not url:
                 return None
             
-            title = clean_text(title)
-            content = clean_text(content)
-            
-            if not title:
+            # 基础关键词匹配
+            if not any(keyword.lower() in title.lower() or keyword.lower() in content.lower() for keyword in query.split()):
                 return None
-            
+
             score = calculate_relevance_score(query, title, content)
             if score < 0.1:
                 return None
             
+            publish_time_str = item.get('publish_time') or item.get('create_time')
+            publish_time = parse_publish_time(str(publish_time_str)) if publish_time_str else None
+
             return SearchResult(
                 title=title,
                 url=url,
-                snippet=content[:200] + "..." if len(content) > 200 else content,
-                source=SourceType.ZHIHU,
+                snippet=content[:200],
+                source=self.source_type,
                 score=score,
-                author=item.get('author', '') or item.get('author_name', ''),
+                publish_time=publish_time,
+                author=item.get('author') or item.get('nickname'),
+                content=content,
+                metadata={'account': item.get('account', '')}
+            )
+        except Exception as e:
+            logger.error(f"解析微信文章出错: {item.get('title', '')} - {e}")
+            return None
+
+
+class ZhihuSearcher(BasePrivateSearcher):
+    """知乎搜索器"""
+    def __init__(self, config: Dict[str, Any]):
+        super().__init__(config, SourceType.ZHIHU)
+
+    def parse_item(self, item: Dict[str, Any], query: str) -> Optional[SearchResult]:
+        try:
+            title = clean_text(item.get('title', '') or item.get('question', ''))
+            content = clean_text(item.get('content', '') or item.get('answer', ''))
+            url = item.get('url', '')
+
+            if not title or not url:
+                return None
+                
+            if not any(keyword.lower() in title.lower() or keyword.lower() in content.lower() for keyword in query.split()):
+                return None
+
+            score = calculate_relevance_score(query, title, content)
+            if score < 0.1:
+                return None
+
+            return SearchResult(
+                title=title,
+                url=url,
+                snippet=content[:200],
+                source=self.source_type,
+                score=score,
+                author=item.get('author'),
                 content=content,
                 metadata={
-                    'answer_id': item.get('answer_id', ''),
-                    'question_id': item.get('question_id', ''),
                     'vote_count': item.get('vote_count', 0),
                     'comment_count': item.get('comment_count', 0)
                 }
             )
-            
         except Exception as e:
-            logger.error(f"解析知乎内容出错: {e}")
-            return None 
+            logger.error(f"解析知乎内容出错: {item.get('title', '')} - {e}")
+            return None

@@ -37,6 +37,21 @@ class SearchResult:
             self.images = []
         if self.metadata is None:
             self.metadata = {}
+        
+        # 确保 source 是 SourceType 枚举
+        if isinstance(self.source, str):
+            try:
+                self.source = SourceType(self.source)
+            except ValueError:
+                self.source = SourceType.CUSTOM
+
+        # 确保 publish_time 是 datetime 对象
+        if isinstance(self.publish_time, str):
+            try:
+                # 尝试解析 ISO 格式的日期时间字符串
+                self.publish_time = datetime.fromisoformat(self.publish_time.replace('Z', '+00:00'))
+            except (ValueError, TypeError):
+                self.publish_time = None
 
 
 @dataclass
