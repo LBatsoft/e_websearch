@@ -24,36 +24,7 @@ def clean_text(text: str) -> str:
     return text
 
 
-def calculate_relevance_score(query: str, title: str, snippet: str) -> float:
-    """计算相关性得分"""
-    score = 0.0
-    
-    query_lower = query.lower()
-    title_lower = title.lower()
-    snippet_lower = snippet.lower()
-    
-    # 标题匹配权重更高
-    if query_lower in title_lower:
-        score += 0.6
-    
-    # 摘要匹配
-    if query_lower in snippet_lower:
-        score += 0.3
-    
-    # 计算查询词在文本中的密度
-    query_words = query_lower.split()
-    title_words = title_lower.split()
-    snippet_words = snippet_lower.split()
-    
-    title_match_count = sum(1 for word in query_words if word in title_words)
-    snippet_match_count = sum(1 for word in query_words if word in snippet_words)
-    
-    if query_words:
-        title_density = title_match_count / len(query_words)
-        snippet_density = snippet_match_count / len(query_words)
-        score += title_density * 0.3 + snippet_density * 0.2
-    
-    return min(score, 1.0)
+
 
 
 def parse_publish_time(date_str: str) -> Optional[datetime]:

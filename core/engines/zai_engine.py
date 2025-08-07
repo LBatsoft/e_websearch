@@ -10,7 +10,8 @@ from loguru import logger
 from .base_engine import BaseSearchEngine
 from config import ZAI_API_KEY
 from core.models import SearchResult, SearchRequest, SourceType
-from core.utils import clean_text, calculate_relevance_score, parse_publish_time, RateLimiter
+from core.utils import clean_text, parse_publish_time, RateLimiter
+from core.relevance_scoring import HybridScorer
 
 try:
     from zhipuai import ZhipuAI
@@ -28,6 +29,7 @@ class ZaiSearchEngine(BaseSearchEngine):
         
         self.api_key = ZAI_API_KEY
         self.rate_limiter = RateLimiter(max_requests=30, time_window=60)
+        self.scorer = HybridScorer()
         
         if not ZhipuAI:
             logger.warning("ZAI客户端不可用，请安装zhipuai包")
@@ -161,7 +163,7 @@ class ZaiSearchEngine(BaseSearchEngine):
                     # 如果是字典格式
                     title = clean_text(item.get('title', ''))
                     url = item.get('link', '') or item.get('url', '')
-                    content = clean_text(item.get('content', '') or item.get('snippet', ''))
+                    content = item.get('content', '') or item.get('snippet', '')
                     # 为snippet创建合适的预览内容
                     snippet = content[:50] if len(content) > 50 else content
                     media = item.get('media', '')
@@ -171,7 +173,7 @@ class ZaiSearchEngine(BaseSearchEngine):
                     continue
                 
                 # 计算相关性得分
-                score = calculate_relevance_score(query, title, snippet)
+                score = self.scorer.calculate_score(query, title, snippet)
                 
                 # 解析发布时间
                 publish_time = None

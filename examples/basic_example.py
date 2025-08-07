@@ -9,7 +9,15 @@ from dotenv import load_dotenv
 # 加载环境变量
 load_dotenv()
 
-from e_websearch import SearchOrchestrator, SearchRequest, SourceType
+import sys
+import os
+
+# 添加项目根目录到 Python 路径
+project_root = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, project_root)
+
+from core.search_orchestrator import SearchOrchestrator
+from core.models import SearchRequest, SourceType
 
 
 async def basic_search_example():
@@ -64,11 +72,22 @@ async def basic_search_example():
                 print(f"   发布时间: {result.publish_time}")
         
         # 获取统计信息
-        stats = orchestrator.get_search_statistics(response.results)
         print(f"\n统计信息:")
-        print(f"平均得分: {stats.get('avg_score', 0):.3f}")
-        print(f"有完整内容的结果: {stats.get('has_content_count', 0)}")
-        print(f"来源分布: {stats.get('source_distribution', {})}")
+        if response.results:
+            scores = [result.score for result in response.results if hasattr(result, 'score')]
+            avg_score = sum(scores) / len(scores) if scores else 0
+            print(f"平均得分: {avg_score:.3f}")
+            
+            has_content_count = sum(1 for result in response.results if result.content)
+            print(f"有完整内容的结果: {has_content_count}")
+            
+            source_distribution = {}
+            for result in response.results:
+                source = result.source.value
+                source_distribution[source] = source_distribution.get(source, 0) + 1
+            print(f"来源分布: {source_distribution}")
+        else:
+            print("无搜索结果")
         
     except Exception as e:
         print(f"搜索失败: {e}")

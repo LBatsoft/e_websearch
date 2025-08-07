@@ -263,6 +263,30 @@ class MyCustomScorer(BaseScorer):
 # 在 SearchOrchestrator 中使用
 orchestrator = SearchOrchestrator(scorer=MyCustomScorer())
 
+## CI/CD 和自动化
+
+本项目配置了完整的 GitHub Actions CI/CD 流水线，支持自动化测试、构建、安全扫描和部署。
+
+### 自动化功能
+
+- **多环境测试**: 支持 Python 3.9, 3.10, 3.11 版本测试
+- **代码质量检查**: 集成 Black, isort, flake8, mypy 等工具
+- **安全扫描**: 使用 bandit, safety, Trivy 进行安全漏洞检测
+- **Docker 构建**: 多架构镜像构建 (linux/amd64, linux/arm64)
+- **自动部署**: 支持版本发布时的自动部署
+- **通知系统**: 构建成功/失败通知
+
+### 快速开始
+
+1. **启用 Actions**: 在仓库设置中启用 GitHub Actions
+2. **推送代码**: 推送到 `master` 或 `develop` 分支自动触发构建
+3. **查看结果**: 在 Actions 标签页查看构建状态和日志
+4. **发布版本**: 创建版本标签 (如 `v1.0.0`) 触发发布流程
+
+详细配置说明请参考 [GitHub Actions 配置文档](docs/github-actions-readme.md)。
+
+更多详细文档请查看 [docs/](docs/) 文件夹。
+
 ## 许可证
 
 MIT License
@@ -270,6 +294,22 @@ MIT License
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！
+
+### 开发流程
+
+1. Fork 本仓库
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 创建 Pull Request 到 `master` 分支
+
+### 代码规范
+
+- 使用 Black 进行代码格式化
+- 使用 isort 进行导入排序
+- 使用 flake8 进行代码风格检查
+- 使用 mypy 进行类型检查
+- 编写测试用例确保代码质量
 
 ## 最新更新
 

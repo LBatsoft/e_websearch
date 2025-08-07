@@ -18,8 +18,8 @@ e_websearch/
 ├── api_client_example.py        # 详细的客户端示例
 ├── Dockerfile                   # Docker 配置
 ├── docker-compose.yml           # Docker Compose 配置
-├── API_README.md                # 详细 API 文档
-└── API_USAGE_SUMMARY.md         # 本文件 (使用总结)
+├── api-readme.md                # 详细 API 文档
+└── api-usage-summary.md         # 本文件 (使用总结)
 ```
 
 ## 🚀 快速启动

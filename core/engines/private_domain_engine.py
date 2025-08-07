@@ -12,7 +12,8 @@ from core.engines.base_engine import BaseSearchEngine
 from abc import ABC, abstractmethod
 from config import PRIVATE_DOMAIN_CONFIG
 from core.models import SearchResult, SearchRequest, SourceType
-from core.utils import clean_text, calculate_relevance_score, parse_publish_time
+from core.utils import clean_text, parse_publish_time
+from core.relevance_scoring import HybridScorer
 
 
 class PrivateDomainEngine(BaseSearchEngine):
@@ -59,6 +60,7 @@ class BasePrivateSearcher(ABC):
         self.api_url = config.get('api_url', '')
         self.timeout = config.get('timeout', 10)
         self.source_type = source_type
+        self.scorer = HybridScorer()
         if self.enabled and not self.api_url:
             logger.warning(f"{source_type.value} 搜索器已启用，但 API URL 未配置。")
             self.enabled = False
@@ -130,10 +132,10 @@ class WeChatSearcher(BasePrivateSearcher):
             # 适配微信API的实际返回格式
             title = clean_text(item.get('title', ''))
             # 优先使用summary，如果没有则使用content_markdown
-            content = clean_text(item.get('summary', '') or item.get('content_markdown', '') or item.get('content', '') or item.get('digest', '') or item.get('description', ''))
+            full_content = item.get('content_markdown', '')
             url = item.get('link', '') or item.get('url', '')
             
-            logger.debug(f"提取的字段 - 标题: {title[:50]}, URL: {url}, 内容长度: {len(content)}")
+            logger.debug(f"提取的字段 - 标题: {title[:50]}, URL: {url}, 内容长度: {len(full_content)}")
             
             if not title or not url:
                 logger.warning(f"跳过条目：标题或URL为空 - 标题: {title[:30]}, URL: {url[:50]}")
@@ -141,8 +143,9 @@ class WeChatSearcher(BasePrivateSearcher):
             
             # 移除基础关键词匹配，让搜索更加灵活
             logger.debug(f"跳过基础关键词匹配检查，直接进行相关性评分")
+            snippet_content = item.get('summary', '') or full_content[:50]
 
-            score = calculate_relevance_score(query, title, content)
+            score = self.scorer.calculate_score(query, title, snippet_content)
             logger.debug(f"计算得分: {score:.2f} - 标题: {title[:50]}")
             if score < 0.1:
                 logger.debug(f"跳过条目：得分过低 ({score:.2f}) - 标题: {title[:50]}")
@@ -175,8 +178,7 @@ class WeChatSearcher(BasePrivateSearcher):
             }
 
             # 为snippet创建更合适的预览内容
-            # 优先使用summary作为snippet，如果没有则截取content的前200字符
-            snippet_content = item.get('summary', '') or content[:50]
+            # 优先使用summary作为snippet，如果没有则截取content的前50字符
             
             return SearchResult(
                 title=title,
@@ -186,7 +188,7 @@ class WeChatSearcher(BasePrivateSearcher):
                 score=score,
                 publish_time=publish_time,
                 author=author,
-                content=content,
+                content=full_content,
                 metadata=metadata
             )
         except Exception as e:
@@ -210,7 +212,7 @@ class ZhihuSearcher(BasePrivateSearcher):
                 
             # 移除基础关键词匹配，让搜索更加灵活
 
-            score = calculate_relevance_score(query, title, content)
+            score = self.scorer.calculate_score(query, title, content)
             if score < 0.1:
                 return None
 

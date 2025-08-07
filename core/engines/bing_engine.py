@@ -11,7 +11,8 @@ from loguru import logger
 from .base_engine import BaseSearchEngine
 from config import BING_SEARCH_URL, BING_API_KEY
 from core.models import SearchResult, SearchRequest, SourceType
-from core.utils import clean_text, calculate_relevance_score, parse_publish_time, RateLimiter
+from core.utils import clean_text, parse_publish_time, RateLimiter
+from core.relevance_scoring import HybridScorer
 
 
 class BingSearchEngine(BaseSearchEngine):
@@ -102,7 +103,7 @@ class BingSearchEngine(BaseSearchEngine):
                     continue
                 
                 # 计算相关性得分
-                score = calculate_relevance_score(query, title, snippet)
+                score = self.scorer.calculate_score(query, title, snippet)
                 
                 # 解析发布时间
                 publish_time = None

@@ -25,12 +25,15 @@ class TfidfScorer(BaseScorer):
     
     def __init__(self):
         self.vectorizer = TfidfVectorizer(
-            analyzer='word',
-            ngram_range=(1, 2),  # 使用单词和双词组合
+            analyzer='char',  # 使用字符级分析，适合中文
+            ngram_range=(2, 4),  # 使用2-4字符组合
             max_features=10000,
-            stop_words='english'  # 可以根据需要改为中文停用词
+            # 移除英文停用词，因为处理中文文本
+            stop_words=None
         )
         self._vectors_cache: Dict[str, np.ndarray] = {}
+        self._is_fitted = False
+        self._all_texts = []
     
     def _get_vector(self, text: str) -> np.ndarray:
         """获取文本的 TF-IDF 向量"""
@@ -38,12 +41,37 @@ class TfidfScorer(BaseScorer):
             return self._vectors_cache[text]
         
         try:
-            vector = self.vectorizer.fit_transform([text]).toarray()
-            self._vectors_cache[text] = vector
-            return vector
+            # 如果是第一次调用，先拟合向量器
+            if not self._is_fitted:
+                # 收集所有文本用于拟合
+                self._all_texts.append(text)
+                # 暂时返回零向量，稍后会重新计算
+                self._vectors_cache[text] = np.zeros((1, self.vectorizer.max_features))
+                return self._vectors_cache[text]
+            else:
+                # 向量器已经拟合，直接转换
+                vector = self.vectorizer.transform([text]).toarray()
+                self._vectors_cache[text] = vector
+                return vector
         except Exception as e:
             logger.error(f"TF-IDF向量化失败: {str(e)}")
             return np.zeros((1, self.vectorizer.max_features))
+    
+    def _fit_vectorizer(self):
+        """拟合向量器"""
+        if not self._is_fitted and self._all_texts:
+            try:
+                # 拟合向量器
+                self.vectorizer.fit(self._all_texts)
+                self._is_fitted = True
+                
+                # 重新计算所有缓存的向量
+                for text in self._all_texts:
+                    if text in self._vectors_cache:
+                        vector = self.vectorizer.transform([text]).toarray()
+                        self._vectors_cache[text] = vector
+            except Exception as e:
+                logger.error(f"拟合TF-IDF向量器失败: {str(e)}")
     
     def calculate_score(self, query: str, title: str, snippet: str) -> float:
         """计算相关性得分
@@ -56,10 +84,22 @@ class TfidfScorer(BaseScorer):
         Returns:
             float: 相关性得分 (0-1)
         """
+        # 收集所有文本用于拟合
+        if not self._is_fitted:
+            self._all_texts.extend([query, title, snippet])
+        
         # 获取向量表示
         query_vector = self._get_vector(query)
         title_vector = self._get_vector(title)
         snippet_vector = self._get_vector(snippet)
+        
+        # 如果向量器还没拟合，先拟合
+        if not self._is_fitted:
+            self._fit_vectorizer()
+            # 重新获取向量
+            query_vector = self._get_vector(query)
+            title_vector = self._get_vector(title)
+            snippet_vector = self._get_vector(snippet)
         
         # 计算余弦相似度
         title_sim = cosine_similarity(query_vector, title_vector)[0][0]

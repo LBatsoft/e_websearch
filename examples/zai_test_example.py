@@ -12,15 +12,9 @@ import os
 project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
 
-# 直接导入模块
-try:
-    from search_orchestrator import SearchOrchestrator
-    from models import SearchRequest, SourceType
-except ImportError:
-    # 如果直接导入失败，尝试从上级目录导入
-    sys.path.insert(0, os.path.dirname(project_root))
-    from e_websearch.search_orchestrator import SearchOrchestrator
-    from e_websearch.models import SearchRequest, SourceType
+# 导入模块
+from core.search_orchestrator import SearchOrchestrator
+from core.models import SearchRequest, SourceType
 
 
 async def test_zai_search():
