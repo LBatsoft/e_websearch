@@ -1,0 +1,15 @@
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Cache
+.pytest_cache/
+cache/
+
+# Logs
+logs/
+*.log

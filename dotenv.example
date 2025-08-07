@@ -1,0 +1,10 @@
+# 复制此文件为 .env 并填入您的 API 密钥
+# Copy this file to .env and fill in your API keys
+
+# Bing 搜索 API 密钥 (可选)
+# Get one from: https://www.microsoft.com/en-us/bing/apis/bing-web-search-api
+BING_API_KEY=YOUR_BING_API_KEY_HERE
+
+# ZAI Search Pro API 密钥 (可选)
+# Get one from: https://www.aliyun.com/product/bailian
+ZAI_API_KEY=YOUR_ZAI_API_KEY_HERE

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  e-websearch-api:
+    build: .
+    container_name: e-websearch-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ZAI_API_KEY=${ZAI_API_KEY:-}
+      - BING_API_KEY=${BING_API_KEY:-}
+    volumes:
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - e-websearch-net
+
+  # 可选：添加 Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: e-websearch-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - e-websearch-net
+
+volumes:
+  redis_data:
+
+networks:
+  e-websearch-net:
+    driver: bridge
