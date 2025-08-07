@@ -35,7 +35,7 @@ class ContentExtractor:
                 try:
                     # 这里可以实现实际的内容提取逻辑
                     # 暂时使用摘要作为内容
-                    result.content = result.snippet
+                    result.content = result.content
                     result.metadata = result.metadata or {}
                     result.metadata['extraction_method'] = 'snippet_fallback'
                 except Exception as e:
