@@ -11,7 +11,7 @@
 - **灵活搜索**: 移除基础关键词匹配限制，提供更智能的相关性评分。
 - **智能预览**: 优化snippet和content字段，避免内容重复，提供更好的预览体验。
 - **结果聚合**: 智能去重、多维度评分、结果排序。
-- **缓存系统**: 支持内存和 Redis 两种缓存后端，可灵活配置。
+- **智能缓存系统**: 支持内存和 Redis 两种缓存后端，具备LRU退出机制、自动清理、详细统计等功能。
 - **异步处理**: 全异步架构，支持高并发搜索。
 - **API服务**: 提供基于FastAPI的Web接口，方便集成。
 - **Docker支持**: 提供 `docker-compose.yml`，支持一键部署 API 服务和 Redis。
@@ -74,6 +74,16 @@ ZAI_API_KEY=your_zai_api_key_here
 # REDIS_HOST=localhost
 # REDIS_PORT=6379
 # REDIS_DB=0
+
+# 缓存高级配置 (可选)
+# CACHE_TTL=3600                    # 缓存过期时间（秒）
+# CACHE_MAX_SIZE=1000               # 内存缓存最大条目数
+# CACHE_CLEANUP_INTERVAL=300        # 清理间隔（秒）
+# CACHE_LRU_ENABLED=true            # 启用LRU退出机制
+# CACHE_STATS_ENABLED=true          # 启用缓存统计
+# CACHE_MAX_CONNECTIONS=20          # Redis最大连接数
+# CACHE_RETRY_ON_TIMEOUT=true       # Redis超时重试
+# CACHE_HEALTH_CHECK_INTERVAL=30    # Redis健康检查间隔
 
 # 私域搜索配置 (可选)
 # 启用微信搜索并指定其 API 地址
@@ -276,8 +286,11 @@ MIT License
 - **字段映射优化**: 正确提取微信API的 `title`、`link`、`account`、`summary` 等字段
 - **智能内容选择**: 优先使用API提供的摘要字段，备选截取内容
 - **错误处理增强**: 改进API响应解析的错误处理和日志记录
+- **缓存策略优化**: 实现LRU退出机制、自动清理、详细统计功能
 
 #### 📝 文档更新
 - 更新了微信私域搜索的API格式说明
 - 添加了搜索优化特性的详细说明
 - 完善了环境变量配置示例
+- 添加了缓存高级配置选项说明
+- 新增了缓存统计API端点文档

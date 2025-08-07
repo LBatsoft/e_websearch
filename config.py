@@ -41,8 +41,16 @@ REDIS_CONFIG = {
 # 缓存配置
 CACHE_CONFIG = {
     "enabled": True,
-    "ttl": 3600,  # 1小时
-    "max_size": 1000
+    "ttl": 3600,  # 缓存过期时间（秒）
+    "max_size": 1000,  # 内存缓存最大条目数
+    "cleanup_interval": 300,  # 清理间隔（秒）
+    "lru_enabled": True,  # 启用LRU退出机制
+    "stats_enabled": True,  # 启用缓存统计
+    "max_connections": 20,  # Redis最大连接数
+    "retry_on_timeout": True,  # Redis超时重试
+    "health_check_interval": 30,  # Redis健康检查间隔
+    "fallback_enabled": True,  # 启用本地缓存降级
+    "sync_interval": 60  # 缓存同步间隔（秒）
 }
 
 # 内容提取配置
@@ -88,5 +96,23 @@ PRIVATE_DOMAIN_CONFIG = {
         "timeout": _get_int_env("ZHIHU_API_TIMEOUT", 30)
     }
 }
-# 使用 "memory" 或 "redis"
+# 使用 "memory"、"redis" 或 "distributed"
 CACHE_TYPE = os.getenv("CACHE_TYPE", "memory")
+
+# 动态更新缓存配置
+def get_cache_config():
+    """获取缓存配置，支持环境变量覆盖"""
+    config = CACHE_CONFIG.copy()
+    config.update({
+        "ttl": _get_int_env("CACHE_TTL", config["ttl"]),
+        "max_size": _get_int_env("CACHE_MAX_SIZE", config["max_size"]),
+        "cleanup_interval": _get_int_env("CACHE_CLEANUP_INTERVAL", config["cleanup_interval"]),
+        "lru_enabled": _get_bool_env("CACHE_LRU_ENABLED", config["lru_enabled"]),
+        "stats_enabled": _get_bool_env("CACHE_STATS_ENABLED", config["stats_enabled"]),
+        "max_connections": _get_int_env("CACHE_MAX_CONNECTIONS", config["max_connections"]),
+        "retry_on_timeout": _get_bool_env("CACHE_RETRY_ON_TIMEOUT", config["retry_on_timeout"]),
+        "health_check_interval": _get_int_env("CACHE_HEALTH_CHECK_INTERVAL", config["health_check_interval"]),
+        "fallback_enabled": _get_bool_env("CACHE_FALLBACK_ENABLED", config["fallback_enabled"]),
+        "sync_interval": _get_int_env("CACHE_SYNC_INTERVAL", config["sync_interval"])
+    })
+    return config

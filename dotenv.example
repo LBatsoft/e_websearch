@@ -10,13 +10,25 @@ BING_API_KEY=YOUR_BING_API_KEY_HERE
 ZAI_API_KEY=YOUR_ZAI_API_KEY_HERE
 
 # 缓存配置 (可选, 默认使用 "memory")
-# 可选值: "memory" 或 "redis"
-# CACHE_TYPE=redis
+# 可选值: "memory"、"redis" 或 "distributed"
+# CACHE_TYPE=distributed
 
 # 如果使用 Redis，可以指定连接信息 (可选)
 # REDIS_HOST=localhost
 # REDIS_PORT=6379
 # REDIS_DB=0
+
+# 缓存高级配置 (可选)
+# CACHE_TTL=3600                    # 缓存过期时间（秒）
+# CACHE_MAX_SIZE=1000               # 内存缓存最大条目数
+# CACHE_CLEANUP_INTERVAL=300        # 清理间隔（秒）
+# CACHE_LRU_ENABLED=true            # 启用LRU退出机制
+# CACHE_STATS_ENABLED=true          # 启用缓存统计
+# CACHE_MAX_CONNECTIONS=20          # Redis最大连接数
+# CACHE_RETRY_ON_TIMEOUT=true       # Redis超时重试
+# CACHE_HEALTH_CHECK_INTERVAL=30    # Redis健康检查间隔
+# CACHE_FALLBACK_ENABLED=true       # 启用本地缓存降级
+# CACHE_SYNC_INTERVAL=60            # 缓存同步间隔（秒）
 
 # 私域搜索配置 (可选)
 # 启用微信搜索并指定其 API 地址

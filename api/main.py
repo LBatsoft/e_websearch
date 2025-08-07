@@ -353,11 +353,15 @@ async def get_suggestions(
 async def get_statistics(orchestrator = Depends(get_orchestrator)):
     """获取系统统计信息"""
     try:
-        # 这里可以添加更多统计信息
+        # 获取缓存统计信息
+        cache_stats = await orchestrator.cache_manager.get_stats()
+        
+        # 构建统计信息
         stats = {
             "available_sources": [s.value for s in orchestrator.get_available_sources()],
             "cache_enabled": orchestrator.cache_manager.enabled,
-            "service_status": "running"
+            "service_status": "running",
+            "cache_stats": cache_stats
         }
         
         return StatisticsResponse(
@@ -379,12 +383,16 @@ async def get_statistics(orchestrator = Depends(get_orchestrator)):
 async def clear_cache(orchestrator = Depends(get_orchestrator)):
     """清空缓存"""
     try:
-        orchestrator.clear_cache()
+        await orchestrator.clear_cache()
+        
+        # 获取清理后的缓存统计
+        cache_stats = await orchestrator.cache_manager.get_stats()
+        cache_size = cache_stats.get('current_size', 0) if isinstance(cache_stats, dict) else 0
         
         return CacheOperationResponse(
             success=True,
             message="缓存已清空",
-            cache_size=0
+            cache_size=cache_size
         )
         
     except Exception as e:
@@ -396,6 +404,55 @@ async def clear_cache(orchestrator = Depends(get_orchestrator)):
             message=error_message
         )
 
+
+@app.get("/cache/stats", response_model=dict)
+async def get_cache_stats(orchestrator = Depends(get_orchestrator)):
+    """获取详细的缓存统计信息"""
+    try:
+        cache_stats = await orchestrator.cache_manager.get_stats()
+        
+        return {
+            "success": True,
+            "cache_stats": cache_stats,
+            "timestamp": time.time()
+        }
+        
+    except Exception as e:
+        error_message = f"获取缓存统计失败: {str(e)}"
+        print(f"❌ {error_message}")
+        
+        return {
+            "success": False,
+            "error": error_message,
+            "cache_stats": {}
+        }
+
+
+@app.get("/cache/health", response_model=dict)
+async def get_cache_health(orchestrator = Depends(get_orchestrator)):
+    """获取缓存健康状态"""
+    try:
+        health_status = await orchestrator.cache_manager.health_check()
+        cache_stats = await orchestrator.cache_manager.get_stats()
+        
+        return {
+            "success": True,
+            "healthy": health_status,
+            "cache_type": cache_stats.get('type', 'unknown'),
+            "fallback_enabled": cache_stats.get('fallback_enabled', False),
+            "redis_healthy": cache_stats.get('redis_healthy', False) if cache_stats.get('type') == 'distributed' else None,
+            "timestamp": time.time()
+        }
+        
+    except Exception as e:
+        error_message = f"获取缓存健康状态失败: {str(e)}"
+        print(f"❌ {error_message}")
+        
+        return {
+            "success": False,
+            "healthy": False,
+            "error": error_message
+        }
 
 
 if __name__ == "__main__":

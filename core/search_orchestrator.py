@@ -11,10 +11,10 @@ from core.models import SearchRequest, SearchResponse, SearchResult, SourceType
 from core.engines import BingSearchEngine, ZaiSearchEngine, PrivateDomainEngine
 from core.content_extractor import ContentExtractor
 from core.result_aggregator import ResultAggregator
-from core.cache_manager import InMemoryCacheManager, RedisCacheManager, BaseCacheManager
+from core.cache_manager import CacheManagerFactory, BaseCacheManager
 from core.utils import generate_cache_key, setup_logging
 from core.relevance_scoring import HybridScorer
-from config import CACHE_TYPE, CACHE_CONFIG
+from config import CACHE_TYPE, get_cache_config
 
 
 class SearchOrchestrator:
@@ -46,10 +46,7 @@ class SearchOrchestrator:
 
     def _init_cache_manager(self) -> BaseCacheManager:
         """根据配置初始化缓存管理器"""
-        if CACHE_TYPE.lower() == 'redis':
-            return RedisCacheManager(CACHE_CONFIG)
-        else:
-            return InMemoryCacheManager(CACHE_CONFIG)
+        return CacheManagerFactory.create_cache_manager(CACHE_TYPE, get_cache_config())
 
     async def close(self):
         """关闭并清理资源"""
