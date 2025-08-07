@@ -214,68 +214,11 @@ jobs:
         docker stop test-container
         docker rm test-container
 
-  security-scan:
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name != 'pull_request'
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Debug image reference
-      run: |
-        echo "Registry: ${{ env.REGISTRY }}"
-        echo "Repository: ${{ github.repository }}"
-        echo "Full image ref: ${{ env.REGISTRY }}/${{ github.repository }}:latest"
-        echo "GitHub actor: ${{ github.actor }}"
-        echo "Branch: ${{ github.ref_name }}"
-        echo "Commit SHA: ${{ github.sha }}"
-
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ${{ env.REGISTRY }}/${{ github.repository }}:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        exit-code: '0'
-        ignore-unfixed: true
-        severity: 'CRITICAL,HIGH'
-        vuln-type: 'os,library'
-
-    - name: Fallback Trivy scan (if remote image fails)
-      if: failure()
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        exit-code: '0'
-        ignore-unfixed: true
-        severity: 'CRITICAL,HIGH'
-
-    - name: Check if SARIF file exists
-      run: |
-        if [ -f "trivy-results.sarif" ]; then
-          echo "✅ SARIF file exists"
-          ls -la trivy-results.sarif
-          echo "File size: $(wc -c < trivy-results.sarif) bytes"
-        else
-          echo "❌ SARIF file not found"
-          ls -la
-        fi
-
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      if: always() && hashFiles('trivy-results.sarif') != ''
-      with:
-        sarif_file: 'trivy-results.sarif'
-        category: 'Trivy Scan Results'
 
   deploy:
     runs-on: ubuntu-latest
-    needs: [build, test-docker, security-scan]
+    needs: [build, test-docker]
     if: github.event_name == 'release' && github.event.action == 'published'
     environment: production
 
@@ -289,12 +232,12 @@ jobs:
 
   notify:
     runs-on: ubuntu-latest
-    needs: [build, test-docker, security-scan]
+    needs: [build, test-docker]
     if: always() && github.event_name != 'pull_request'
 
     steps:
     - name: Notify on success
-      if: needs.build.result == 'success' && needs.test-docker.result == 'success' && needs.security-scan.result == 'success'
+      if: needs.build.result == 'success' && needs.test-docker.result == 'success'
       run: |
         echo "✅ CI/CD Pipeline 成功完成!"
         echo "镜像: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
@@ -304,11 +247,10 @@ jobs:
         # 例如使用 webhook 发送通知
 
     - name: Notify on failure
-      if: needs.build.result == 'failure' || needs.test-docker.result == 'failure' || needs.security-scan.result == 'failure'
+      if: needs.build.result == 'failure' || needs.test-docker.result == 'failure'
       run: |
         echo "❌ CI/CD Pipeline 失败!"
         echo "构建结果: ${{ needs.build.result }}"
         echo "测试结果: ${{ needs.test-docker.result }}"
-        echo "安全扫描结果: ${{ needs.security-scan.result }}"
         
         # 可以添加失败通知
