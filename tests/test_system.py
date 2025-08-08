@@ -126,7 +126,7 @@ async def test_cache_system():
         orchestrator = SearchOrchestrator()
 
         # 清空缓存
-        orchestrator.clear_cache()
+        await orchestrator.clear_cache()
 
         # 第一次搜索
         request = SearchRequest(

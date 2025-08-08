@@ -119,14 +119,39 @@ class ZhipuAIProvider(BaseLLMProvider):
                 ),
             )
 
-            # 尝试不同的响应结构
+            # 兼容多种响应结构，做稳健提取
             try:
-                return response.choices[0].message.content
-            except (AttributeError, IndexError):
-                try:
-                    return response.choices[0].message["content"]
-                except (KeyError, AttributeError):
+                # 情况1：对象属性访问
+                choice0 = None
+                choices = getattr(response, "choices", None)
+                if isinstance(choices, list) and choices:
+                    choice0 = choices[0]
+                # 情况2：字典结构
+                if choice0 is None and isinstance(response, dict):
+                    choices = response.get("choices") or []
+                    choice0 = choices[0] if choices else None
+
+                if choice0 is None:
                     return None
+
+                message = getattr(choice0, "message", None)
+                # 对象 message
+                if message is not None and hasattr(message, "content"):
+                    return getattr(message, "content")
+                # 字典 message
+                if isinstance(message, dict):
+                    return message.get("content")
+                # 某些旧版 SDK 可能直接在 choice 上提供 text/content
+                if hasattr(choice0, "text"):
+                    return getattr(choice0, "text")
+                if hasattr(choice0, "content"):
+                    return getattr(choice0, "content")
+                if isinstance(choice0, dict):
+                    return choice0.get("text") or choice0.get("content")
+                return None
+            except Exception:
+                # 避免因为结构差异导致崩溃
+                return None
 
         except Exception as e:
             logger.error(f"智谱AI生成失败: {e}")
