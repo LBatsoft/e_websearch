@@ -67,6 +67,14 @@ class SearchRequest:
     include_content: bool = True  # 是否提取完整内容
     sources: List[SourceType] = None  # 指定搜索源
     filters: Dict[str, Any] = None
+    # LLM 增强选项（可选）
+    llm_summary: bool = False
+    llm_tags: bool = False
+    llm_per_result: bool = False
+    llm_max_items: int = 5
+    llm_language: str = "zh"
+    model_provider: str = "auto"  # 模型提供商：auto, zhipuai, openai, azure, baidu, qwen, custom
+    model_name: str = ""  # 模型名称：glm-4, gpt-4, qwen-plus 等
 
     def __post_init__(self):
         if self.sources is None:
@@ -85,3 +93,7 @@ class SearchResponse:
     execution_time: float
     sources_used: List[SourceType]
     cache_hit: bool = False
+    # LLM 增强输出（可选）
+    llm_summary: str | None = None
+    llm_tags: List[str] | None = None
+    llm_per_result: Dict[str, Dict[str, Any]] | None = None

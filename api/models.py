@@ -31,6 +31,14 @@ class SearchRequestAPI(BaseModel):
     filters: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="搜索过滤器"
     )
+    # LLM 增强（可选）
+    llm_summary: bool = Field(False, description="是否生成整体摘要")
+    llm_tags: bool = Field(False, description="是否生成整体标签")
+    llm_per_result: bool = Field(False, description="是否对每条结果生成摘要/标签")
+    llm_max_items: int = Field(5, ge=1, le=20, description="参与增强的最多结果数")
+    llm_language: str = Field("zh", description="输出语言：zh/en 等")
+    model_provider: str = Field("auto", description="模型提供商：auto/zhipuai/openai/azure/baidu/qwen/custom")
+    model_name: str = Field("", description="模型名称：glm-4/gpt-4/qwen-plus等")
 
     class Config:
         schema_extra = {
@@ -44,6 +52,13 @@ class SearchRequestAPI(BaseModel):
                     "domain": "www.sohu.com",
                     "content_size": "high",
                 },
+                "llm_summary": True,
+                "llm_tags": True,
+                "llm_per_result": False,
+                "llm_max_items": 6,
+                "llm_language": "zh",
+                "model_provider": "zhipuai",
+                "model_name": "glm-4"
             }
         }
 
@@ -76,6 +91,12 @@ class SearchResponseAPI(BaseModel):
         default_factory=list, description="使用的搜索源"
     )
     cache_hit: bool = Field(False, description="是否命中缓存")
+    # LLM 增强输出（可选）
+    llm_summary: Optional[str] = Field(None, description="整体摘要")
+    llm_tags: List[str] = Field(default_factory=list, description="整体标签")
+    llm_per_result: Dict[str, Any] = Field(
+        default_factory=dict, description="逐条结果的增强输出，按 URL 索引"
+    )
 
 
 class HealthCheckResponse(BaseModel):

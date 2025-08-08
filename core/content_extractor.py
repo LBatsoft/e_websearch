@@ -13,12 +13,18 @@ class ContentExtractor:
 
     def __init__(self, max_concurrent: int = 5):
         self.max_concurrent = max_concurrent
+        self._semaphore = None
 
     async def __aenter__(self):
+        self._semaphore = asyncio.Semaphore(self.max_concurrent)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+        # 清理信号量
+        if self._semaphore:
+            # 等待所有任务完成
+            await asyncio.sleep(0)
+            self._semaphore = None
 
     async def extract_content_batch(self, results: List[SearchResult]):
         """批量提取内容"""
@@ -27,11 +33,8 @@ class ContentExtractor:
 
         logger.info(f"开始提取 {len(results)} 个结果的内容")
 
-        # 创建信号量限制并发数
-        semaphore = asyncio.Semaphore(self.max_concurrent)
-
         async def extract_single(result: SearchResult):
-            async with semaphore:
+            async with self._semaphore:
                 try:
                     # 这里可以实现实际的内容提取逻辑
                     # 暂时使用摘要作为内容

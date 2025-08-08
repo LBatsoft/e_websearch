@@ -1,336 +1,292 @@
-# 增强版Web搜索系统
 
-一套功能强大的多源搜索聚合系统，采用分层架构设计，集成了Bing搜索、ZAI搜索和可扩展的私域搜索能力，并支持API服务。
+<div align="center">
 
-## 主要特性
+<img src="docs/assets/logo.svg" alt="E-WebSearch Logo" height="160" />
 
-- **分层架构**: 核心业务逻辑 (`core`) 与API接口 (`api`) 分离，清晰、可维护、易扩展。
-- **多源搜索**: 支持Bing、ZAI、微信公众号、知乎等多个可插拔的搜索源。
-- **私域搜索**: 支持通过 API 接口对接外部的微信、知乎等私有数据集。
-- **智能评分**: 采用混合评分系统（TF-IDF + 向量模型），支持语义相似度匹配。
-- **灵活搜索**: 移除基础关键词匹配限制，提供更智能的相关性评分。
-- **智能预览**: 优化snippet和content字段，避免内容重复，提供更好的预览体验。
-- **结果聚合**: 智能去重、多维度评分、结果排序。
-- **智能缓存系统**: 支持内存和 Redis 两种缓存后端，具备LRU退出机制、自动清理、详细统计等功能。
-- **异步处理**: 全异步架构，支持高并发搜索。
-- **API服务**: 提供基于FastAPI的Web接口，方便集成。
-- **Docker支持**: 提供 `docker-compose.yml`，支持一键部署 API 服务和 Redis。
 
-## 项目结构
+**基于多源聚合的智能搜索框架，支持 LLM 增强功能**
+
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Redis](https://img.shields.io/badge/Redis-5.0%2B-DC382D.svg?logo=redis&logoColor=white)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-支持-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![ZhipuAI](https://img.shields.io/badge/ZhipuAI-GLM--4-FF6B35.svg)](https://open.bigmodel.cn/)
+
+</div>
+
+---
+
+## 🚀 项目简介
+
+E-WebSearch 是一个功能强大的多源搜索聚合系统，采用分层架构设计，集成了 Bing 搜索、ZAI 搜索和可扩展的私域搜索能力，并支持 API 服务。系统还集成了基于智谱AI GLM-4模型的 LLM 增强功能，为搜索结果提供智能摘要和标签生成。
+
+### 🎯 核心特性
+
+- **🔌 多源可插拔引擎**: 内置 Bing、ZAI 与私域（如微信、知乎）引擎，基于 `BaseEngine` 易于扩展
+- **🧹 一体化内容抽取**: 自动化正文提取与清洗，统一标题、摘要与链接等字段
+- **🧠 相关性与去重**: TF‑IDF + 向量模型的混合评分，结果去重、重排与聚合
+- **🤖 LLM 智能增强**: 整体/逐条摘要与标签，优雅降级；支持智谱AI/OpenAI/Azure
+- **⚡ 高并发异步**: 全链路 asyncio/aiohttp，内建超时与重试策略
+- **💾 智能缓存系统**: 内存/Redis/分布式缓存，TTL、LRU、统计与健康检查，支持自动降级
+- **🧪 可观测与 API**: FastAPI/OpenAPI 文档、健康检查与统计接口
+- **🐳 一键部署**: Docker & Docker Compose 快速启动
+
+
+## 📦 项目结构
 
 ```
 e_websearch/
-├── core/                 # 核心业务逻辑
-│   ├── engines/          # 搜索引擎实现
-│   ├── search_orchestrator.py # 搜索协调器
-│   ├── models.py         # 核心数据模型 (dataclasses)
+├── 🏗️  core/                    # 核心业务逻辑
+│   ├── engines/                 # 搜索引擎实现
+│   ├── search_orchestrator.py   # 搜索协调器
+│   ├── models.py                # 核心数据模型
+│   ├── llm_enhancer.py         # LLM 增强模块
 │   └── ...
-├── api/                  # FastAPI 应用
-│   ├── main.py           # API 端点
-│   └── models.py         # API 数据模型 (Pydantic)
-├── tests/                # 所有测试代码
-├── examples/             # 面向用户的示例
-├── run_api.py            # 运行 API 服务的脚本
-├── config.py             # 系统配置
-├── Dockerfile
-├── requirements.txt
-└── README.md
+├── 🌐  api/                     # FastAPI 应用
+│   ├── main.py                  # API 端点
+│   └── models.py                # API 数据模型
+├── 🧪  tests/                   # 测试代码
+│   ├── test_llm_functionality.py
+│   ├── test_zhipuai_direct.py
+│   └── ...
+├── 📚  examples/                # 使用示例
+│   ├── llm_enhanced_example.py
+│   └── ...
+├── 📖  docs/                    # 文档
+│   ├── llm-enhancement-guide.md
+│   └── ...
+├── 🐳  Dockerfile               # Docker 配置
+├── 📋  requirements.txt         # 依赖列表
+└── 📄  README.md               # 项目说明
 ```
 
-## 快速开始
+## 🚀 快速开始
 
-### 1. 安装依赖
+### 1. 环境准备
 
 ```bash
+# 克隆项目
+git clone https://github.com/your-username/e-websearch.git
+cd e-websearch
+
+# 创建虚拟环境
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# 或
+venv\Scripts\activate     # Windows
+
+# 安装依赖
 pip install -r requirements.txt
 ```
 
-**注意**：首次运行时，系统会自动下载预训练的语言模型（约 100MB）用于语义相关性评分。如果您不需要向量模型评分功能，可以修改 `core/result_aggregator.py` 中的评分器配置。
-
 ### 2. 配置环境变量
 
-复制 `dotenv.example` 文件为 `.env` 并填入您的 API 密钥。
+创建 `.env` 文件：
 
 ```bash
-cp dotenv.example .env
-```
+# 基础配置
+CACHE_TYPE=memory
 
-编辑 `.env` 文件，按需填入您的密钥：
-
-```
-# .env
-
-# Bing 搜索 API 密钥 (可选)
-BING_API_KEY=your_bing_api_key_here
-
-# ZAI Search Pro API 密钥 (可选)
+# ZAI Search Pro (推荐)
 ZAI_API_KEY=your_zai_api_key_here
 
-# 缓存配置 (可选, 默认使用 "memory")
-# 可选值: "memory" 或 "redis"
-# CACHE_TYPE=redis
+# Bing Search (可选)
+BING_API_KEY=your_bing_api_key_here
 
-# 如果使用 Redis，可以指定连接信息 (可选)
-# REDIS_HOST=localhost
-# REDIS_PORT=6379
-# REDIS_DB=0
-
-# 缓存高级配置 (可选)
-# CACHE_TTL=3600                    # 缓存过期时间（秒）
-# CACHE_MAX_SIZE=1000               # 内存缓存最大条目数
-# CACHE_CLEANUP_INTERVAL=300        # 清理间隔（秒）
-# CACHE_LRU_ENABLED=true            # 启用LRU退出机制
-# CACHE_STATS_ENABLED=true          # 启用缓存统计
-# CACHE_MAX_CONNECTIONS=20          # Redis最大连接数
-# CACHE_RETRY_ON_TIMEOUT=true       # Redis超时重试
-# CACHE_HEALTH_CHECK_INTERVAL=30    # Redis健康检查间隔
+# LLM 增强配置
+ZAI_API_KEY=your_zhipuai_api_key_here  # 智谱AI
+OPENAI_API_KEY=your_openai_api_key_here  # OpenAI (可选)
+AZURE_OPENAI_API_KEY=your_azure_api_key_here  # Azure (可选)
 
 # 私域搜索配置 (可选)
-# 启用微信搜索并指定其 API 地址
-# WECHAT_SEARCH_ENABLED=true
-# WECHAT_API_URL=http://your-private-data-api/wechat/search
-# WECHAT_API_TIMEOUT=30
-
-# 启用知乎搜索并指定其 API 地址
-# ZHIHU_SEARCH_ENABLED=true
-# ZHIHU_API_URL=http://your-private-data-api/zhihu/search
-# ZHIHU_API_TIMEOUT=30
+WECHAT_SEARCH_ENABLED=true
+WECHAT_API_URL=http://your-wechat-api.com/search
+ZHIHU_SEARCH_ENABLED=true
+ZHIHU_API_URL=http://your-zhihu-api.com/search
 ```
 
-**重要**: `.env` 文件已被添加到 `.gitignore`，不会被提交到版本库，请放心填写。
+### 3. 启动服务
 
-### 3. 配置私域搜索 (可选)
+```bash
+# 启动 API 服务
+python run_api.py
 
-本系统可以将微信、知乎等私域数据源作为搜索结果的一部分。为此，您需要：
+# 服务地址: http://localhost:8000
+# API 文档: http://localhost:8000/docs
+```
 
-1.  **准备一个私域数据 API**: 您需要自行搭建一个 API 服务，该服务能够接收 `POST` 请求，并通过 JSON body 中的 `query` 参数查询您的私域数据（例如，从您自己的数据库或 Elasticsearch 集群中查询）。
-2.  **配置 API 地址**: 在 `.env` 文件中，取消注释并设置 `WECHAT_SEARCH_ENABLED` 和 `WECHAT_API_URL` (或知乎对应的变量) 来启用并指定您的 API 端点。
+### 4. 使用示例
 
-#### 微信私域搜索API格式
+#### 基础搜索
 
-您的微信API应返回以下格式的JSON响应：
+```python
+import requests
 
+response = requests.post("http://localhost:8000/search", json={
+    "query": "人工智能教育应用",
+    "max_results": 10,
+    "sources": ["zai"]
+})
+
+print(f"找到 {response.json()['total_count']} 个结果")
+```
+
+#### 启用 LLM 增强
+
+```python
+# 带智能摘要和标签的搜索
+response = requests.post("http://localhost:8000/search", json={
+    "query": "人工智能教育应用",
+    "max_results": 10,
+    "sources": ["zai"],
+    # LLM 增强选项
+    "llm_summary": True,        # 生成整体摘要
+    "llm_tags": True,           # 生成整体标签
+    "llm_per_result": False,    # 是否逐条增强
+    "llm_max_items": 5,         # 参与增强的结果数量
+    "llm_language": "zh",       # 输出语言
+    "model_provider": "zhipuai", # 模型提供商
+    "model_name": "glm-4"       # 模型名称
+})
+
+data = response.json()
+print(f"整体摘要: {data['llm_summary']}")
+print(f"相关标签: {data['llm_tags']}")
+```
+
+## 🤖 LLM 增强功能
+
+系统集成了可选的 LLM 增强功能，基于智谱AI GLM-4模型，提供：
+
+- **📝 智能摘要**: 对所有搜索结果生成统一的摘要总结
+- **🏷️ 智能标签**: 为搜索结果集合生成相关标签
+- **🎯 逐条增强**: 为每个搜索结果单独生成摘要和标签
+- **🔄 优雅降级**: 当 LLM 服务不可用时自动跳过增强
+
+详细使用指南请参考：[LLM 增强功能使用指南](docs/llm-enhancement-guide.md)
+
+## 📡 API 接口
+
+### 搜索接口
+
+```bash
+POST /search
+```
+
+**请求参数:**
 ```json
 {
-    "articles": [
-        {
-            "title": "文章标题",
-            "link": "https://mp.weixin.qq.com/s?...",
-            "account": "公众号名称",
-            "publish_time": "2023-12-08 12:15",
-            "summary": "文章摘要内容...",
-            "content_markdown": "完整的文章内容..."
-        }
-    ]
+    "query": "搜索关键词",
+    "max_results": 10,
+    "sources": ["zai", "wechat"],
+    "include_content": true,
+    "filters": {
+        "time_range": "month",
+        "domain": "www.sohu.com"
+    },
+    "llm_summary": true,
+    "llm_tags": true,
+    "llm_per_result": false,
+    "llm_max_items": 5,
+    "llm_language": "zh",
+    "model_provider": "zhipuai",
+    "model_name": "glm-4"
 }
 ```
 
-系统会自动适配不同的API响应格式，优先使用 `articles` 键，备选 `data` 或 `results` 键。
-
-### 4. 运行服务
-
-我们提供了两种运行方式：直接运行和使用 Docker Compose。
-
-#### a) 直接运行 (用于本地开发)
-
-确保您已安装依赖，然后运行：
-```bash
-python run_api.py
-```
-服务将在 `http://localhost:8000` 启动。此模式下默认使用内存缓存。
-
-#### b) 使用 Docker Compose (推荐)
-
-这是最简单的启动方式，它会自动为您启动 API 服务和一个 Redis 实例。
-
-```bash
-docker-compose up --build
+**响应格式:**
+```json
+{
+    "success": true,
+    "results": [...],
+    "total_count": 10,
+    "query": "搜索关键词",
+    "execution_time": 2.5,
+    "sources_used": ["zai"],
+    "cache_hit": false,
+    "llm_summary": "智能生成的摘要...",
+    "llm_tags": ["标签1", "标签2"],
+    "llm_per_result": {...}
+}
 ```
 
-服务同样在 `http://localhost:8000` 启动，并自动连接到 Redis 容器进行缓存。
+### 其他接口
 
-### 4. 查看 API 文档
+- `GET /health` - 健康检查
+- `POST /suggestions` - 搜索建议
+- `GET /statistics` - 系统统计
+- `DELETE /cache` - 清空缓存
 
-访问 [http://localhost:8000/docs](http://localhost:8000/docs) 查看由 FastAPI 自动生成的交互式 API 文档。
+## 🐳 Docker 部署
 
-## 使用示例
-
-您可以直接通过 `api_client_example.py` 脚本与 API 服务进行交互，也可以在您自己的代码中调用核心模块。
-
-### 通过 API 客户端
+### 快速部署
 
 ```bash
-# 运行演示
-python api_client_example.py --demo
+# 启动服务
+docker-compose up -d
 
-# 进行交互式搜索
-python api_client_example.py --interactive
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
 ```
 
-### 在代码中直接调用
+### 生产环境配置
 
-`examples/basic_example.py` 展示了如何在代码中直接使用核心模块：
+1. 设置环境变量
+2. 配置 Redis 缓存
+3. 启用日志记录
+4. 配置反向代理
 
-```python
-import asyncio
-import sys
-from pathlib import Path
+## 🧪 测试
 
-# 将项目根目录添加到 Python 路径
-sys.path.insert(0, str(Path(__file__).parent.parent))
+```bash
+# 运行 LLM 功能测试
+python tests/test_llm_functionality.py
 
-from core.search_orchestrator import SearchOrchestrator
-from core.models import SearchRequest, SourceType
+# 测试智谱AI API
+python tests/test_zhipuai_direct.py
 
-async def main():
-    # 创建搜索协调器
-    orchestrator = SearchOrchestrator()
-    
-    # 创建搜索请求
-    request = SearchRequest(
-        query="人工智能教育",
-        max_results=5,
-        sources=[SourceType.ZAI, SourceType.WECHAT]
-    )
-    
-    # 执行搜索
-    response = await orchestrator.search(request)
-    
-    # 显示结果
-    for result in response.results:
-        print(f"标题: {result.title}")
-        print(f"来源: {result.source.value}")
-        print(f"URL: {result.url}")
-        print("-" * 50)
+# 测试 LLM 增强器
+python tests/test_llm_enhancer_direct.py
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# 运行所有测试
+python -m pytest tests/
 ```
 
-更多高级用法请参考 `examples/advanced_example.py`。
-
-## 扩展开发
-
-### 添加新的搜索源
-
-1.  在 `core/engines/` 目录下创建一个新的引擎文件。
-2.  创建一个继承自 `core.engines.base_engine.BaseSearchEngine` 的类。
-3.  实现 `search` 异步方法。
-4.  在 `core.search_orchestrator.SearchOrchestrator` 的 `__init__` 方法中注册您的新引擎。
-
-### 自定义内容提取器
-
-1.  修改 `core.content_extractor.ContentExtractor` 类。
-2.  实现 `_extract_main_content` 方法，添加针对特定网站的提取规则。
-
-### 自定义相关性评分
-
-系统提供了一个强大的混合评分系统，结合了 TF-IDF 和向量模型的优势：
-
-1. **TF-IDF 评分器** (`TfidfScorer`)
-   - 基于词频-逆文档频率
-   - 支持单词和双词组合（n-gram）
-   - 适合精确匹配场景
-
-2. **向量模型评分器** (`VectorScorer`)
-   - 使用预训练的多语言模型
-   - 支持跨语言语义匹配
-   - 更好地理解同义词和相关概念
-
-3. **混合评分器** (`HybridScorer`)
-   - 智能结合 TF-IDF 和向量模型
-   - 可调节的权重配置
-   - 标题和摘要的差异化权重 
-
-要自定义评分系统，您可以：
-
-1. 继承 `core.relevance_scoring.BaseScorer` 创建新的评分器
-2. 修改 `core.result_aggregator.ResultAggregator` 中的评分权重
-3. 在 `SearchOrchestrator` 中使用自定义评分器
-
-示例：创建自定义评分器
-
-```python
-from core.relevance_scoring import BaseScorer
-
-class MyCustomScorer(BaseScorer):
-    def calculate_score(self, query: str, title: str, snippet: str) -> float:
-        # 实现您的评分逻辑
-        score = 0.0
-        # ...
-        return score
-
-# 在 SearchOrchestrator 中使用
-orchestrator = SearchOrchestrator(scorer=MyCustomScorer())
-
-## CI/CD 和自动化
-
-本项目配置了完整的 GitHub Actions CI/CD 流水线，支持自动化测试、构建、安全扫描和部署。
-
-### 自动化功能
-
-- **多环境测试**: 支持 Python 3.9, 3.10, 3.11 版本测试
-- **代码质量检查**: 集成 Black, isort, flake8, mypy 等工具
-- **安全扫描**: 使用 bandit, safety, Trivy 进行安全漏洞检测
-- **Docker 构建**: 多架构镜像构建 (linux/amd64, linux/arm64)
-- **自动部署**: 支持版本发布时的自动部署
-- **通知系统**: 构建成功/失败通知
-
-### 快速开始
-
-1. **启用 Actions**: 在仓库设置中启用 GitHub Actions
-2. **推送代码**: 推送到 `master` 或 `develop` 分支自动触发构建
-3. **查看结果**: 在 Actions 标签页查看构建状态和日志
-4. **发布版本**: 创建版本标签 (如 `v1.0.0`) 触发发布流程
-
-详细配置说明请参考 [GitHub Actions 配置文档](docs/github-actions-readme.md)。
-
-更多详细文档请查看 [docs/](docs/) 文件夹。
-
-## 许可证
-
-MIT License
-
-## 贡献
+## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
-### 开发流程
+### 贡献指南
 
 1. Fork 本仓库
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建 Pull Request 到 `master` 分支
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 打开 Pull Request
 
-### 代码规范
+## 📄 许可证
 
-- 使用 Black 进行代码格式化
-- 使用 isort 进行导入排序
-- 使用 flake8 进行代码风格检查
-- 使用 mypy 进行类型检查
-- 编写测试用例确保代码质量
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
-## 最新更新
+## 🙏 致谢
 
-### v1.2.0 - 搜索优化和私域搜索适配
+- [FastAPI](https://fastapi.tiangolo.com/) - 现代化的 Web 框架
+- [智谱AI](https://open.bigmodel.cn/) - 提供强大的 LLM 服务
+- [Redis](https://redis.io/) - 高性能缓存数据库
+- [Docker](https://www.docker.com/) - 容器化部署平台
 
-#### 🚀 新功能
-- **移除关键词匹配限制**: 所有搜索引擎不再要求搜索结果必须包含查询关键词
-- **智能预览优化**: 优化 `snippet` 和 `content` 字段，避免内容重复
-- **微信私域搜索适配**: 完全适配微信API的实际返回格式
-- **灵活API解析**: 支持多种API响应格式的自动适配
+---
 
-#### 🔧 技术改进
-- **snippet长度优化**: 统一所有搜索引擎的snippet截取长度为50字符
-- **字段映射优化**: 正确提取微信API的 `title`、`link`、`account`、`summary` 等字段
-- **智能内容选择**: 优先使用API提供的摘要字段，备选截取内容
-- **错误处理增强**: 改进API响应解析的错误处理和日志记录
-- **缓存策略优化**: 实现LRU退出机制、自动清理、详细统计功能
+<div align="center">
 
-#### 📝 文档更新
-- 更新了微信私域搜索的API格式说明
-- 添加了搜索优化特性的详细说明
-- 完善了环境变量配置示例
-- 添加了缓存高级配置选项说明
-- 新增了缓存统计API端点文档
+**E-WebSearch** - 让搜索更智能 🤖
+
+[![GitHub stars](https://img.shields.io/github/stars/your-username/e-websearch?style=social)](https://github.com/your-username/e-websearch)
+[![GitHub forks](https://img.shields.io/github/forks/your-username/e-websearch?style=social)](https://github.com/your-username/e-websearch)
+[![GitHub issues](https://img.shields.io/github/issues/your-username/e-websearch)](https://github.com/your-username/e-websearch/issues)
+
+</div>

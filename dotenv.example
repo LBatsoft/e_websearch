@@ -9,6 +9,31 @@ BING_API_KEY=YOUR_BING_API_KEY_HERE
 # Get one from: https://www.aliyun.com/product/bailian
 ZAI_API_KEY=YOUR_ZAI_API_KEY_HERE
 
+# ===== LLM 增强功能配置 =====
+# LLM API 密钥配置 (至少配置一个以启用 LLM 增强功能)
+
+# 智谱AI (ZhipuAI) - 推荐用于中文内容
+# 获取地址: https://open.bigmodel.cn/
+ZAI_API_KEY=YOUR_ZHIPUAI_API_KEY_HERE
+
+# OpenAI - 推荐用于英文内容
+# 获取地址: https://platform.openai.com/
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
+
+# Azure OpenAI - 企业级服务
+# 获取地址: https://azure.microsoft.com/en-us/products/cognitive-services/openai-service
+AZURE_OPENAI_API_KEY=YOUR_AZURE_OPENAI_API_KEY_HERE
+AZURE_OPENAI_ENDPOINT=YOUR_AZURE_OPENAI_ENDPOINT_HERE
+
+# 百度文心 - 中文理解能力强
+# 获取地址: https://cloud.baidu.com/product/wenxinworkshop
+BAIDU_API_KEY=YOUR_BAIDU_API_KEY_HERE
+BAIDU_SECRET_KEY=YOUR_BAIDU_SECRET_KEY_HERE
+
+# 阿里通义千问 - 多模态能力强
+# 获取地址: https://dashscope.aliyun.com/
+DASHSCOPE_API_KEY=YOUR_DASHSCOPE_API_KEY_HERE
+
 # 缓存配置 (可选, 默认使用 "memory")
 # 可选值: "memory"、"redis" 或 "distributed"
 # CACHE_TYPE=distributed

@@ -15,6 +15,7 @@ from core.cache_manager import CacheManagerFactory, BaseCacheManager
 from core.utils import generate_cache_key, setup_logging
 from core.relevance_scoring import HybridScorer
 from config import CACHE_TYPE, get_cache_config
+from core.llm_enhancer import LLMEnhancer
 
 
 class SearchOrchestrator:
@@ -31,6 +32,7 @@ class SearchOrchestrator:
         self.scorer = HybridScorer()
         self.aggregator = ResultAggregator(self.scorer) if ResultAggregator else None
         self.cache_manager = self._init_cache_manager()
+        self.llm_enhancer = LLMEnhancer()
 
         # 引擎映射
         self.engines = {}
@@ -51,8 +53,30 @@ class SearchOrchestrator:
     async def close(self):
         """关闭并清理资源"""
         logger.info("正在关闭搜索协调器...")
+        
+        # 关闭缓存管理器
         if self.cache_manager:
             await self.cache_manager.close()
+        
+        # 关闭所有搜索引擎
+        for engine in self.engines.values():
+            if hasattr(engine, 'close') and callable(getattr(engine, 'close')):
+                try:
+                    await engine.close()
+                except Exception as e:
+                    logger.warning(f"关闭搜索引擎时出错: {e}")
+        
+        # 关闭LLM增强器
+        if self.llm_enhancer:
+            try:
+                await self.llm_enhancer.close()
+            except Exception as e:
+                logger.warning(f"关闭LLM增强器时出错: {e}")
+        
+        # 等待一小段时间确保所有异步任务完成
+        await asyncio.sleep(0.1)
+        
+        logger.info("搜索协调器已关闭")
 
     async def search(self, request: SearchRequest) -> SearchResponse:
         """执行搜索"""
@@ -89,6 +113,32 @@ class SearchOrchestrator:
         if request.include_content and aggregated_results:
             await self._extract_content(aggregated_results)
 
+        # 可选：LLM 增强（摘要/打标签）
+        llm_summary = getattr(request, "llm_summary", False)
+        llm_tags = getattr(request, "llm_tags", False)
+        llm_per_result = getattr(request, "llm_per_result", False)
+
+        overall_summary = None
+        overall_tags = []
+        per_result_map = {}
+        if (llm_summary or llm_tags or llm_per_result) and aggregated_results:
+            try:
+                overall_summary, overall_tags, per_result_map = await self.llm_enhancer.enhance(
+                    aggregated_results,
+                    request.query,
+                    {
+                        "llm_summary": llm_summary,
+                        "llm_tags": llm_tags,
+                        "llm_per_result": llm_per_result,
+                        "llm_max_items": getattr(request, "llm_max_items", 5),
+                        "language": getattr(request, "llm_language", "zh"),
+                        "model_provider": getattr(request, "model_provider", "auto"),
+                        "model_name": getattr(request, "model_name", ""),
+                    },
+                )
+            except Exception as e:
+                logger.warning(f"LLM 增强失败，将继续返回基础结果: {e}")
+
         # 缓存结果
         await self.cache_manager.set(cache_key, aggregated_results)
 
@@ -102,6 +152,9 @@ class SearchOrchestrator:
             execution_time=execution_time,
             sources_used=list(results_by_source.keys()),
             cache_hit=False,
+            llm_summary=overall_summary,
+            llm_tags=overall_tags,
+            llm_per_result=per_result_map,
         )
 
         logger.info(

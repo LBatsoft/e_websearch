@@ -197,6 +197,13 @@ async def search(request: SearchRequestAPI, orchestrator=Depends(get_orchestrato
                 include_content=request.include_content,
                 sources=internal_sources,
                 filters=request.filters,
+                llm_summary=request.llm_summary,
+                llm_tags=request.llm_tags,
+                llm_per_result=request.llm_per_result,
+                llm_max_items=request.llm_max_items,
+                llm_language=request.llm_language,
+                model_provider=request.model_provider,
+                model_name=request.model_name,
             )
         else:
             # 如果 SearchRequest 不可用，创建简单的字典结构
@@ -206,6 +213,13 @@ async def search(request: SearchRequestAPI, orchestrator=Depends(get_orchestrato
                 "include_content": request.include_content,
                 "sources": internal_sources,
                 "filters": request.filters,
+                "llm_summary": request.llm_summary,
+                "llm_tags": request.llm_tags,
+                "llm_per_result": request.llm_per_result,
+                "llm_max_items": request.llm_max_items,
+                "llm_language": request.llm_language,
+                "model_provider": request.model_provider,
+                "model_name": request.model_name,
             }
 
         # 执行搜索
@@ -247,6 +261,9 @@ async def search(request: SearchRequestAPI, orchestrator=Depends(get_orchestrato
                 execution_time=response.get("execution_time", 0.0),
                 sources_used=api_sources_used,
                 cache_hit=response.get("cache_hit", False),
+                llm_summary=response.get("llm_summary"),
+                llm_tags=response.get("llm_tags", []),
+                llm_per_result=response.get("llm_per_result", {}),
             )
         else:
             # 处理对象响应（真实搜索）
@@ -279,6 +296,9 @@ async def search(request: SearchRequestAPI, orchestrator=Depends(get_orchestrato
                 execution_time=response.execution_time,
                 sources_used=api_sources_used,
                 cache_hit=response.cache_hit,
+                llm_summary=response.llm_summary,
+                llm_tags=response.llm_tags or [],
+                llm_per_result=response.llm_per_result or {},
             )
 
     except Exception as e:

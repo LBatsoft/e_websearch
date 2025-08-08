@@ -21,6 +21,14 @@ BING_API_KEY = os.getenv("BING_API_KEY", "")
 # ZAI Search Pro配置
 ZAI_API_KEY = os.getenv("ZAI_API_KEY", "")
 
+# LLM 提供商配置
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+BAIDU_API_KEY = os.getenv("BAIDU_API_KEY", "")
+BAIDU_SECRET_KEY = os.getenv("BAIDU_SECRET_KEY", "")
+DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
+
 # 浏览器配置
 BROWSER_CONFIG = {
     "headless": True,
