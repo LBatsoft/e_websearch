@@ -73,7 +73,9 @@ class SearchRequest:
     llm_per_result: bool = False
     llm_max_items: int = 5
     llm_language: str = "zh"
-    model_provider: str = "auto"  # 模型提供商：auto, zhipuai, openai, azure, baidu, qwen, custom
+    model_provider: str = (
+        "auto"  # 模型提供商：auto, zhipuai, openai, azure, baidu, qwen, custom
+    )
     model_name: str = ""  # 模型名称：glm-4, gpt-4, qwen-plus 等
 
     def __post_init__(self):

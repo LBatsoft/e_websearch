@@ -37,7 +37,9 @@ class SearchRequestAPI(BaseModel):
     llm_per_result: bool = Field(False, description="是否对每条结果生成摘要/标签")
     llm_max_items: int = Field(5, ge=1, le=20, description="参与增强的最多结果数")
     llm_language: str = Field("zh", description="输出语言：zh/en 等")
-    model_provider: str = Field("auto", description="模型提供商：auto/zhipuai/openai/azure/baidu/qwen/custom")
+    model_provider: str = Field(
+        "auto", description="模型提供商：auto/zhipuai/openai/azure/baidu/qwen/custom"
+    )
     model_name: str = Field("", description="模型名称：glm-4/gpt-4/qwen-plus等")
 
     class Config:
@@ -58,7 +60,7 @@ class SearchRequestAPI(BaseModel):
                 "llm_max_items": 6,
                 "llm_language": "zh",
                 "model_provider": "zhipuai",
-                "model_name": "glm-4"
+                "model_name": "glm-4",
             }
         }
 

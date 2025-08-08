@@ -53,29 +53,29 @@ class SearchOrchestrator:
     async def close(self):
         """关闭并清理资源"""
         logger.info("正在关闭搜索协调器...")
-        
+
         # 关闭缓存管理器
         if self.cache_manager:
             await self.cache_manager.close()
-        
+
         # 关闭所有搜索引擎
         for engine in self.engines.values():
-            if hasattr(engine, 'close') and callable(getattr(engine, 'close')):
+            if hasattr(engine, "close") and callable(getattr(engine, "close")):
                 try:
                     await engine.close()
                 except Exception as e:
                     logger.warning(f"关闭搜索引擎时出错: {e}")
-        
+
         # 关闭LLM增强器
         if self.llm_enhancer:
             try:
                 await self.llm_enhancer.close()
             except Exception as e:
                 logger.warning(f"关闭LLM增强器时出错: {e}")
-        
+
         # 等待一小段时间确保所有异步任务完成
         await asyncio.sleep(0.1)
-        
+
         logger.info("搜索协调器已关闭")
 
     async def search(self, request: SearchRequest) -> SearchResponse:
@@ -123,18 +123,22 @@ class SearchOrchestrator:
         per_result_map = {}
         if (llm_summary or llm_tags or llm_per_result) and aggregated_results:
             try:
-                overall_summary, overall_tags, per_result_map = await self.llm_enhancer.enhance(
-                    aggregated_results,
-                    request.query,
-                    {
-                        "llm_summary": llm_summary,
-                        "llm_tags": llm_tags,
-                        "llm_per_result": llm_per_result,
-                        "llm_max_items": getattr(request, "llm_max_items", 5),
-                        "language": getattr(request, "llm_language", "zh"),
-                        "model_provider": getattr(request, "model_provider", "auto"),
-                        "model_name": getattr(request, "model_name", ""),
-                    },
+                overall_summary, overall_tags, per_result_map = (
+                    await self.llm_enhancer.enhance(
+                        aggregated_results,
+                        request.query,
+                        {
+                            "llm_summary": llm_summary,
+                            "llm_tags": llm_tags,
+                            "llm_per_result": llm_per_result,
+                            "llm_max_items": getattr(request, "llm_max_items", 5),
+                            "language": getattr(request, "llm_language", "zh"),
+                            "model_provider": getattr(
+                                request, "model_provider", "auto"
+                            ),
+                            "model_name": getattr(request, "model_name", ""),
+                        },
+                    )
                 )
             except Exception as e:
                 logger.warning(f"LLM 增强失败，将继续返回基础结果: {e}")

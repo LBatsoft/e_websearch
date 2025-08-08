@@ -241,16 +241,16 @@ class ZaiSearchEngine(BaseSearchEngine):
     async def close(self):
         """关闭并清理资源"""
         logger.info("正在关闭ZAI搜索引擎...")
-        
+
         # 清理客户端连接
-        if hasattr(self, 'client') and self.client:
+        if hasattr(self, "client") and self.client:
             try:
                 # ZhipuAI客户端通常不需要显式关闭，但我们可以清理引用
                 self.client = None
             except Exception as e:
                 logger.warning(f"关闭ZAI客户端时出错: {e}")
-        
+
         # 等待一小段时间确保所有异步任务完成
         await asyncio.sleep(0.1)
-        
+
         logger.info("ZAI搜索引擎已关闭")
