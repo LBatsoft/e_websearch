@@ -5,11 +5,11 @@ E-WebSearch API 服务启动脚本
 
 import argparse
 import os
-import sys
 from pathlib import Path
+import sys
 
-import uvicorn
 from dotenv import load_dotenv
+import uvicorn
 
 
 def main():

@@ -28,10 +28,10 @@ LLM 增强模块：用于对搜索结果进行整体摘要与打标签（可选�
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import asyncio
 import json
 import re
-from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp

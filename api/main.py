@@ -2,14 +2,14 @@
 E-WebSearch API 服务主入口
 """
 
+from contextlib import asynccontextmanager
 import os
+from pathlib import Path
 
 # 导入本地模块
 import sys
 import time
 import traceback
-from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import List
 
 from dotenv import load_dotenv

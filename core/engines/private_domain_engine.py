@@ -2,9 +2,9 @@
 私域搜索引擎
 """
 
+from abc import ABC, abstractmethod
 import asyncio
 import json
-from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 import aiohttp

@@ -2,15 +2,15 @@
 缓存管理器
 """
 
+from abc import ABC, abstractmethod
 import asyncio
+from collections import OrderedDict
 import json
 import time
-from abc import ABC, abstractmethod
-from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
-import redis.asyncio as aio_redis
 from loguru import logger
+import redis.asyncio as aio_redis
 
 from config import REDIS_CONFIG, get_cache_config
 from core.models import SearchResult

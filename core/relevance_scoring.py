@@ -5,8 +5,8 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
-import numpy as np
 from loguru import logger
+import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity

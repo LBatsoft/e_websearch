@@ -6,10 +6,10 @@
 
 import asyncio
 import json
+from pathlib import Path
 import statistics
 import sys
 import time
-from pathlib import Path
 from typing import Dict, List
 
 import aiohttp

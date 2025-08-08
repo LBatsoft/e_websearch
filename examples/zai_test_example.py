@@ -3,11 +3,11 @@ ZAI Search Pro 集成测试示例
 """
 
 import asyncio
+from datetime import datetime
 import os
 
 # 添加项目路径到 Python path
 import sys
-from datetime import datetime
 
 project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
