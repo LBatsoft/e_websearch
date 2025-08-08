@@ -3,11 +3,12 @@
 E-WebSearch API 服务启动脚本
 """
 
-import uvicorn
 import argparse
-import sys
 import os
+import sys
 from pathlib import Path
+
+import uvicorn
 from dotenv import load_dotenv
 
 

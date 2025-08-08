@@ -4,20 +4,21 @@
 
 import asyncio
 import os
+
 from dotenv import load_dotenv
 
 # 加载环境变量
 load_dotenv()
 
-import sys
 import os
+import sys
 
 # 添加项目根目录到 Python 路径
 project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
 
-from core.search_orchestrator import SearchOrchestrator
 from core.models import SearchRequest, SourceType
+from core.search_orchestrator import SearchOrchestrator
 
 
 async def basic_search_example():

@@ -2,10 +2,11 @@
 API 数据模型
 """
 
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class SourceTypeAPI(str, Enum):

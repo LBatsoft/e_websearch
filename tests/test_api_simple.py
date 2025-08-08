@@ -3,11 +3,12 @@
 简化的 API 测试版本，用于验证 API 框架是否正常工作
 """
 
+import time
+from typing import Any, Dict, List
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Any
-import time
 
 # 创建 FastAPI 应用
 app = FastAPI(

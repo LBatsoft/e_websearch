@@ -4,18 +4,18 @@ ZAI Search Pro 集成测试示例
 
 import asyncio
 import os
-from datetime import datetime
 
 # 添加项目路径到 Python path
 import sys
-import os
+from datetime import datetime
 
 project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
 
+from core.models import SearchRequest, SourceType
+
 # 导入模块
 from core.search_orchestrator import SearchOrchestrator
-from core.models import SearchRequest, SourceType
 
 
 async def test_zai_search():

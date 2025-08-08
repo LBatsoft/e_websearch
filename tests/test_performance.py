@@ -5,21 +5,22 @@
 """
 
 import asyncio
-import time
+import json
 import statistics
 import sys
+import time
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
+
 import aiohttp
-import json
 
 # 将项目根目录添加到 Python 路径
 sys.path.insert(0, str(Path(__file__).parent))
 
-from core.search_orchestrator import SearchOrchestrator
-from core.models import SearchRequest, SourceType
-from core.cache_manager import CacheManagerFactory
 from config import get_cache_config
+from core.cache_manager import CacheManagerFactory
+from core.models import SearchRequest, SourceType
+from core.search_orchestrator import SearchOrchestrator
 
 
 class PerformanceTester:

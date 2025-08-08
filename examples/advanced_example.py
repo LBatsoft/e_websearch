@@ -4,17 +4,16 @@
 
 import asyncio
 import json
-from datetime import datetime
-
-import sys
 import os
+import sys
+from datetime import datetime
 
 # 添加项目根目录到 Python 路径
 project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
 
-from core.search_orchestrator import SearchOrchestrator
 from core.models import SearchRequest, SourceType
+from core.search_orchestrator import SearchOrchestrator
 
 
 async def multi_source_search():

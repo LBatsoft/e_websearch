@@ -10,9 +10,10 @@ import sys
 project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
 
+from core.models import SearchRequest, SourceType
+
 # 导入模块
 from core.search_orchestrator import SearchOrchestrator
-from core.models import SearchRequest, SourceType
 
 
 async def basic_zai_search():

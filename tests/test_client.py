@@ -3,9 +3,10 @@
 E-WebSearch API 客户端测试脚本
 """
 
-import requests
 import json
 import time
+
+import requests
 
 
 def test_api_service(base_url="http://localhost:8001"):

@@ -4,10 +4,11 @@ E-WebSearch LLM 增强功能示例
 演示如何使用 LLM 摘要和打标签功能
 """
 
-import requests
 import json
 import time
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+
+import requests
 
 
 class EWebSearchLLMClient:

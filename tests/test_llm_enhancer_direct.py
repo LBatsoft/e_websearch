@@ -3,10 +3,11 @@
 直接测试 LLM 增强器
 """
 
-import os
 import asyncio
+import os
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # 添加项目根目录到 Python 路径

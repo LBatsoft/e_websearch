@@ -3,12 +3,13 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 import numpy as np
+from loguru import logger
+from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
-from loguru import logger
 
 
 class BaseScorer(ABC):

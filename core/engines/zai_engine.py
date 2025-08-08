@@ -3,15 +3,17 @@ ZAI Search Pro搜索引擎
 """
 
 import asyncio
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
+
 from loguru import logger
 
-from .base_engine import BaseSearchEngine
 from config import ZAI_API_KEY
-from core.models import SearchResult, SearchRequest, SourceType
-from core.utils import clean_text, parse_publish_time, RateLimiter
+from core.models import SearchRequest, SearchResult, SourceType
 from core.relevance_scoring import HybridScorer
+from core.utils import RateLimiter, clean_text, parse_publish_time
+
+from .base_engine import BaseSearchEngine
 
 try:
     from zhipuai import ZhipuAI

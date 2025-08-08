@@ -2,19 +2,20 @@
 E-WebSearch API 服务主入口
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import time
-import traceback
-from typing import List
+import os
 
 # 导入本地模块
 import sys
-import os
+import time
+import traceback
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import List
+
 from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 # 加载环境变量
 project_root = Path(__file__).parent.parent
@@ -25,21 +26,21 @@ if env_path.exists():
 else:
     print("⚠️  未找到 .env 文件，使用默认配置")
 
-from core.search_orchestrator import SearchOrchestrator
 from core.models import SearchRequest, SourceType
+from core.search_orchestrator import SearchOrchestrator
+
 from .models import (
+    CacheOperationResponse,
+    ErrorResponse,
+    HealthCheckResponse,
     SearchRequestAPI,
     SearchResponseAPI,
     SearchResultAPI,
     SourceTypeAPI,
-    HealthCheckResponse,
-    ErrorResponse,
+    StatisticsResponse,
     SuggestionsRequest,
     SuggestionsResponse,
-    StatisticsResponse,
-    CacheOperationResponse,
 )
-
 
 # 全局变量
 search_orchestrator = None

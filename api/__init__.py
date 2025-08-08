@@ -5,12 +5,12 @@ E-WebSearch API 模块
 
 from .main import app
 from .models import (
+    ErrorResponse,
+    HealthCheckResponse,
     SearchRequestAPI,
     SearchResponseAPI,
     SearchResultAPI,
     SourceTypeAPI,
-    HealthCheckResponse,
-    ErrorResponse,
 )
 
 __version__ = "1.0.0"

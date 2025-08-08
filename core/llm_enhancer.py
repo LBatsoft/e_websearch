@@ -31,21 +31,23 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-import aiohttp
-from typing import List, Tuple, Dict, Any, Optional
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple
+
+import aiohttp
 from loguru import logger
 
-from .models import SearchResult
 from config import (
-    ZAI_API_KEY,
-    OPENAI_API_KEY,
     AZURE_OPENAI_API_KEY,
     AZURE_OPENAI_ENDPOINT,
     BAIDU_API_KEY,
     BAIDU_SECRET_KEY,
     DASHSCOPE_API_KEY,
+    OPENAI_API_KEY,
+    ZAI_API_KEY,
 )
+
+from .models import SearchResult
 
 # 尝试导入各种 LLM SDK
 try:

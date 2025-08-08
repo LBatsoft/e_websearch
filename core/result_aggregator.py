@@ -2,8 +2,9 @@
 结果聚合器
 """
 
-from typing import List, Dict
-from .models import SearchResult, SearchRequest, SourceType
+from typing import Dict, List
+
+from .models import SearchRequest, SearchResult, SourceType
 
 # 暂时注释掉新的评分系统，直到依赖安装完成
 # from .relevance_scoring import BaseScorer, HybridScorer

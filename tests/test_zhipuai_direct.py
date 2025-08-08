@@ -3,10 +3,11 @@
 直接测试智谱AI API
 """
 
-import os
 import asyncio
+import os
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 from zhipuai import ZhipuAI
 

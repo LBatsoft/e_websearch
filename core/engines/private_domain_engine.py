@@ -3,17 +3,18 @@
 """
 
 import asyncio
-import aiohttp
 import json
-from typing import List, Dict, Any, Optional
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional
+
+import aiohttp
 from loguru import logger
 
-from core.engines.base_engine import BaseSearchEngine
-from abc import ABC, abstractmethod
 from config import PRIVATE_DOMAIN_CONFIG
-from core.models import SearchResult, SearchRequest, SourceType
-from core.utils import clean_text, parse_publish_time
+from core.engines.base_engine import BaseSearchEngine
+from core.models import SearchRequest, SearchResult, SourceType
 from core.relevance_scoring import HybridScorer
+from core.utils import clean_text, parse_publish_time
 
 
 class PrivateDomainEngine(BaseSearchEngine):

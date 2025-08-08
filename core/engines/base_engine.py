@@ -4,7 +4,8 @@
 
 from abc import ABC, abstractmethod
 from typing import List
-from ..models import SearchResult, SearchRequest
+
+from ..models import SearchRequest, SearchResult
 
 
 class BaseSearchEngine(ABC):

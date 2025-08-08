@@ -11,8 +11,8 @@ from pathlib import Path
 # 添加项目路径
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.search_orchestrator import SearchOrchestrator
 from core.models import SearchRequest, SourceType
+from core.search_orchestrator import SearchOrchestrator
 
 
 async def test_basic_functionality():
@@ -155,8 +155,8 @@ async def test_result_aggregation():
     print("6. 测试结果聚合...")
 
     try:
-        from core.result_aggregator import ResultAggregator
         from core.models import SearchResult, SourceType
+        from core.result_aggregator import ResultAggregator
 
         aggregator = ResultAggregator()
 
