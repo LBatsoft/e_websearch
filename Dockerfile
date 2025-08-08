@@ -1,5 +1,5 @@
 # E-WebSearch API 服务 Docker 配置 - 多阶段构建
-FROM python:3.9-slim as builder
+FROM python:3.11-slim as builder
 
 # 设置工作目录
 WORKDIR /app
@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # 生产阶段
-FROM python:3.9-slim as production
+FROM python:3.11-slim as production
 
 # 设置工作目录
 WORKDIR /app

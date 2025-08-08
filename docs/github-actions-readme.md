@@ -21,7 +21,7 @@
 ## 工作流阶段
 
 ### 测试阶段 (test)
-- 多 Python 版本测试 (3.9, 3.10, 3.11)
+- 多 Python 版本测试 (3.11, 3.12)
 - 代码覆盖率报告
 - 自动上传到 Codecov
 
@@ -119,7 +119,7 @@ DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 env:
   REGISTRY: ghcr.io                    # 容器注册表
   IMAGE_NAME: ${{ github.repository }} # 镜像名称
-  PYTHON_VERSION: "3.9"               # Python 版本
+  PYTHON_VERSION: "3.11"               # Python 版本
 ```
 
 ### 缓存配置
