@@ -144,6 +144,18 @@ class SearchOrchestrator:
             except Exception as e:
                 logger.warning(f"LLM 增强失败，将继续返回基础结果: {e}")
 
+        # 将逐条增强写回每条结果
+        if per_result_map:
+            url_to_enhanced = per_result_map
+            for item in aggregated_results:
+                enhanced = url_to_enhanced.get(item.url)
+                if enhanced:
+                    item.llm_summary = enhanced.get("llm_summary")
+                    item.labels = list(enhanced.get("labels", []) or [])
+                    # 同步到 metadata，兼容旧消费者
+                    item.metadata["llm_summary"] = item.llm_summary
+                    item.metadata["labels"] = item.labels
+
         # 缓存结果
         await self.cache_manager.set(cache_key, aggregated_results)
 

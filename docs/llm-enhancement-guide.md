@@ -4,6 +4,8 @@
 
 E-WebSearch 提供了强大的 LLM（大语言模型）增强功能，可以为搜索结果生成智能摘要和标签，提升用户体验。
 
+> **📢 重要更新**：v1.1.0 版本已修复 LLM 增强字段为空的问题。现在 `llm_summary` 和 `labels` 字段可以正确返回解析后的数据。
+
 ## 功能特性
 
 ### 1. 整体摘要 (Overall Summary)
@@ -119,13 +121,19 @@ response = requests.post("http://localhost:8000/search", json={
 # 解析逐条增强结果
 data = response.json()
 if data["success"]:
-    per_result = data.get("llm_per_result", {})
+    # ✅ 推荐方式：直接访问每条结果的增强字段
     for result in data["results"]:
-        url = result["url"]
-        enhanced = per_result.get(url, {})
         print(f"标题: {result['title']}")
-        print(f"摘要: {enhanced.get('llm_summary')}")
-        print(f"标签: {enhanced.get('labels', [])}")
+        print(f"LLM摘要: {result.get('llm_summary')}")  # 直接获取解析后的摘要
+        print(f"标签: {result.get('labels', [])}")      # 直接获取解析后的标签
+    
+    # 🔄 兼容方式：通过 llm_per_result 映射访问
+    per_result = data.get("llm_per_result", {})
+    if per_result:
+        for url, enhanced in per_result.items():
+            print(f"URL: {url}")
+            print(f"摘要: {enhanced.get('llm_summary')}")
+            print(f"标签: {enhanced.get('labels', [])}")
 ```
 
 ### 完整功能示例
@@ -172,7 +180,9 @@ response = requests.post("http://localhost:8000/search", json={
 
 ## 响应格式
 
-### 成功响应示例
+### 成功响应示例（含逐条增强字段）
+
+> **💡 提示**：每条搜索结果中的 `llm_summary` 和 `labels` 字段包含解析后的数据，可以直接使用。`llm_per_result` 映射提供相同的增强信息，按 URL 索引。
 
 ```json
 {
@@ -184,7 +194,9 @@ response = requests.post("http://localhost:8000/search", json={
       "url": "https://example.com/article1",
       "snippet": "人工智能技术正在医疗领域发挥重要作用...",
       "source": "zai",
-      "score": 0.95
+      "score": 0.95,
+      "llm_summary": "文章介绍了AI在医疗诊断中的应用",
+      "labels": ["医疗AI", "诊断技术", "智能医疗"]
     }
   ],
   "total_count": 10,
@@ -267,11 +279,19 @@ if result["success"]:
     print("整体摘要:", result.get("llm_summary"))
     print("整体标签:", result.get("llm_tags", []))
     
+    # ✅ 推荐方式：直接访问每条结果的增强字段
     for item in result["results"]:
         print(f"标题: {item['title']}")
+        print(f"LLM摘要: {item.get('llm_summary')}")  # 直接获取解析后的摘要
+        print(f"标签: {item.get('labels', [])}")      # 直接获取解析后的标签
+    
+    # 🔄 兼容方式：通过 llm_per_result 映射访问
+    for item in result["results"]:
         enhanced = result.get("llm_per_result", {}).get(item['url'], {})
-        print(f"摘要: {enhanced.get('llm_summary')}")
-        print(f"标签: {enhanced.get('labels', [])}")
+        if enhanced:
+            print(f"URL: {item['url']}")
+            print(f"映射摘要: {enhanced.get('llm_summary')}")
+            print(f"映射标签: {enhanced.get('labels', [])}")
 ```
 
 ### 命令行示例
@@ -335,12 +355,18 @@ except Exception as e:
    - 确认模型提供商可用
    - 查看服务日志
 
-2. **响应时间过长**
+2. **LLM 增强字段为空**
+   - ✅ **已修复**：确保使用最新版本的代码
+   - 检查是否正确启用了 `llm_per_result` 参数
+   - 确认 `llm_max_items` 设置合理（建议 3-8）
+   - 查看服务日志确认 LLM 增强是否执行成功
+
+3. **响应时间过长**
    - 减少 `llm_max_items` 数量
    - 选择更快的模型
    - 检查网络连接
 
-3. **摘要质量不佳**
+4. **摘要质量不佳**
    - 调整 `llm_language` 参数
    - 尝试不同的模型提供商
    - 优化查询词
@@ -358,6 +384,11 @@ print("服务状态:", health)
 ```
 
 ## 更新日志
+
+### v1.1.0 (最新)
+- 🐛 **修复**：LLM 增强字段（`llm_summary` 和 `labels`）在搜索结果中为空的问题
+- 🔧 **改进**：优化 JSON 解析逻辑，支持代码块格式的 LLM 响应
+- 📝 **文档**：更新使用说明和故障排除指南
 
 ### v1.0.0
 - 支持多种 LLM 提供商

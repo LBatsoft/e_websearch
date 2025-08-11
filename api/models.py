@@ -79,6 +79,9 @@ class SearchResultAPI(BaseModel):
     content: Optional[str] = Field(None, description="完整内容")
     images: List[str] = Field(default_factory=list, description="图片URL列表")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="元数据")
+    # LLM 增强（可选）
+    llm_summary: Optional[str] = Field(None, description="该条结果的LLM摘要")
+    labels: List[str] = Field(default_factory=list, description="该条结果的标签")
 
 
 class SearchResponseAPI(BaseModel):

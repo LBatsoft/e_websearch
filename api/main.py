@@ -245,6 +245,8 @@ async def search(request: SearchRequestAPI, orchestrator=Depends(get_orchestrato
                         content=result.get("content"),
                         images=result.get("images", []),
                         metadata=result.get("metadata", {}),
+                        llm_summary=result.get("llm_summary"),
+                        labels=result.get("labels", []),
                     )
                     api_results.append(api_result)
 
@@ -281,6 +283,8 @@ async def search(request: SearchRequestAPI, orchestrator=Depends(get_orchestrato
                     content=result.content,
                     images=result.images,
                     metadata=result.metadata,
+                    llm_summary=result.llm_summary,
+                    labels=result.labels or [],
                 )
                 api_results.append(api_result)
 

@@ -33,12 +33,17 @@ class SearchResult:
     content: Optional[str] = None  # 完整内容（通过内容提取器获取）
     images: List[str] = None
     metadata: Dict[str, Any] = None
+    # LLM 增强（可选）
+    llm_summary: Optional[str] = None
+    labels: List[str] = None
 
     def __post_init__(self):
         if self.images is None:
             self.images = []
         if self.metadata is None:
             self.metadata = {}
+        if self.labels is None:
+            self.labels = []
 
         # 确保 source 是 SourceType 枚举
         if isinstance(self.source, str):

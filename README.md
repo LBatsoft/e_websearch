@@ -153,6 +153,11 @@ response = requests.post("http://localhost:8000/search", json={
 data = response.json()
 print(f"整体摘要: {data['llm_summary']}")
 print(f"相关标签: {data['llm_tags']}")
+# 逐条结果上的增强（直接在每条结果对象中返回）
+for item in data["results"]:
+    print(f"- {item['title']}")
+    print(f"  摘要: {item.get('llm_summary')}")
+    print(f"  标签: {item.get('labels', [])}")
 ```
 
 ## 🤖 LLM 增强功能
@@ -199,7 +204,17 @@ POST /search
 ```json
 {
     "success": true,
-    "results": [...],
+  "results": [
+    {
+      "title": "人工智能在医疗领域的应用",
+      "url": "https://example.com/article1",
+      "snippet": "人工智能技术正在医疗领域发挥重要作用...",
+      "source": "zai",
+      "score": 0.95,
+      "llm_summary": "文章介绍了AI在医疗诊断中的应用",
+      "labels": ["医疗AI", "诊断技术", "智能医疗"]
+    }
+  ],
     "total_count": 10,
     "query": "搜索关键词",
     "execution_time": 2.5,
@@ -207,7 +222,8 @@ POST /search
     "cache_hit": false,
     "llm_summary": "智能生成的摘要...",
     "llm_tags": ["标签1", "标签2"],
-    "llm_per_result": {...}
+  "llm_per_result": { ... }  
+  // 兼容旧字段：同样的信息也包含在 results[*].llm_summary / results[*].labels 中
 }
 ```
 

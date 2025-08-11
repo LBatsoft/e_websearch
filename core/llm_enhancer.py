@@ -555,14 +555,27 @@ class LLMEnhancer:
 
             parsed: Dict[str, Any] = {"summary": None, "tags": []}
             if content:
-                # 尝试解析为 JSON；若失败，做简单提取
+                # 1) 处理 Markdown 代码块 ```json ... ```
+                content_stripped = content.strip()
+                code_match = re.search(r"```(?:json)?\n([\s\S]*?)\n```", content_stripped)
+                if code_match:
+                    content_candidate = code_match.group(1)
+                else:
+                    content_candidate = content_stripped
+
+                # 2) JSON 解析尝试
                 try:
-                    parsed = json.loads(content)
+                    maybe = json.loads(content_candidate)
+                    # 兼容返回结构既可能是 {summary,tags} 也可能是 {llm_summary,labels}
+                    parsed = {
+                        "summary": maybe.get("summary") or maybe.get("llm_summary"),
+                        "tags": maybe.get("tags") or maybe.get("labels") or [],
+                    }
                 except Exception:
-                    # 简单正则提取标签行
-                    summary_guess = content.strip()
+                    # 3) 非 JSON，尝试提取列表作为标签
+                    summary_guess = content_candidate
                     tags_guess: List[str] = []
-                    m = re.search(r"\[.*\]", content, flags=re.S)
+                    m = re.search(r"\[.*\]", content_candidate, flags=re.S)
                     if m:
                         try:
                             tags_guess = json.loads(m.group(0))
@@ -608,12 +621,22 @@ class LLMEnhancer:
                     summary_val = None
                     labels_val: List[str] = []
                     if content:
+                        # 1) 处理 Markdown 代码块 ```json ... ```
+                        content_stripped = content.strip()
+                        code_match = re.search(r"```(?:json)?\n([\s\S]*?)\n```", content_stripped)
+                        if code_match:
+                            content_candidate = code_match.group(1)
+                        else:
+                            content_candidate = content_stripped
+
+                        # 2) JSON 解析尝试
                         try:
-                            data = json.loads(content)
+                            data = json.loads(content_candidate)
                             summary_val = data.get("llm_summary")
                             labels_val = list(map(str, data.get("labels", [])))
                         except Exception:
-                            summary_val = content.strip()
+                            # 3) 非 JSON，使用原始内容作为摘要
+                            summary_val = content_candidate.strip()
 
                     per_result_map[item.url] = {
                         "llm_summary": summary_val,
