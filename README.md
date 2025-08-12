@@ -301,8 +301,8 @@ python -m pytest tests/
 
 **E-WebSearch** - 让搜索更智能 🤖
 
-[![GitHub stars](https://img.shields.io/github/stars/LBatsoft/e-websearch?style=social)](https://github.com/LBatsoft/e-websearch)
-[![GitHub forks](https://img.shields.io/github/forks/LBatsoft/e-websearch?style=social)](https://github.com/LBatsoft/e-websearch)
-[![GitHub issues](https://img.shields.io/github/issues/LBatsoft/e-websearch)](https://github.com/LBatsoft/e-websearch/issues)
+[![GitHub stars](https://img.shields.io/github/stars/LBatsoft/e_websearch?style=social)](https://github.com/LBatsoft/e_websearch)
+[![GitHub forks](https://img.shields.io/github/forks/LBatsoft/e_websearch?style=social)](https://github.com/LBatsoft/e_websearch)
+[![GitHub issues](https://img.shields.io/github/issues/LBatsoft/e_websearch)](https://github.com/LBatsoft/e_websearch/issues)
 
 </div>
