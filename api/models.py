@@ -155,3 +155,69 @@ class CacheOperationResponse(BaseModel):
     success: bool = Field(..., description="操作是否成功")
     message: str = Field(..., description="操作消息")
     cache_size: Optional[int] = Field(None, description="缓存大小")
+
+
+# ==================================
+# Agent Search Models
+# ==================================
+
+
+class AgentSearchRequest(BaseModel):
+    """
+    Agent 模式搜索请求
+    """
+
+    query: str = Field(..., description="需要研究的复杂问题或主题", min_length=1, max_length=1000)
+    sources: Optional[List[SourceTypeAPI]] = Field(
+        default=[SourceTypeAPI.ZAI, SourceTypeAPI.BING],
+        description="用于研究的搜索源列表",
+    )
+    model_provider: str = Field(
+        "auto", description="模型提供商：auto/zhipuai/openai/azure/baidu/qwen/custom"
+    )
+    model_name: str = Field("", description="模型名称：glm-4/gpt-4/qwen-plus等")
+    max_iterations: int = Field(3, ge=1, le=5, description="Agent执行的最大迭代轮数")
+    max_results_per_step: int = Field(
+        5, ge=1, le=10, description="每一步搜索返回的最大结果数"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "query": "2024年AI领域的最新技术突破和市场趋势是什么？",
+                "sources": ["zai", "bing"],
+                "model_provider": "zhipuai",
+                "model_name": "glm-4",
+                "max_iterations": 3,
+                "max_results_per_step": 5,
+            }
+        }
+
+
+class AgentStep(BaseModel):
+    """
+    Agent 执行的单步记录
+    """
+
+    step_index: int = Field(..., description="步骤序号")
+    thought: str = Field(..., description="该步骤中Agent的思考过程")
+    tool: str = Field(..., description="该步骤使用的工具，例如 'search'")
+    tool_input: Dict[str, Any] = Field(..., description="提供给工具的输入参数")
+    observation: List[SearchResultAPI] = Field(
+        default_factory=list, description="工具执行后返回的观察结果"
+    )
+
+
+class AgentSearchResponse(BaseModel):
+    """
+    Agent 模式搜索响应
+    """
+
+    success: bool = Field(..., description="请求是否成功")
+    final_answer: str = Field(..., description="Agent根据研究得出的最终综合答案")
+    intermediate_steps: List[AgentStep] = Field(
+        default_factory=list, description="Agent执行的中间步骤和思考过程"
+    )
+    query: str = Field(..., description="原始查询")
+    execution_time: float = Field(..., description="总执行时间（秒）")
+    error_message: Optional[str] = Field(None, description="如果失败，此字段包含错误信息")

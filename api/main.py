@@ -28,8 +28,12 @@ else:
 
 from core.models import SearchRequest, SourceType
 from core.search_orchestrator import SearchOrchestrator
+from core.search_agent import SearchAgent
+from core.llm_enhancer import LLMEnhancer
 
 from .models import (
+    AgentSearchRequest,
+    AgentSearchResponse,
     CacheOperationResponse,
     ErrorResponse,
     HealthCheckResponse,
@@ -44,27 +48,37 @@ from .models import (
 
 # 全局变量
 search_orchestrator = None
+search_agent = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    global search_orchestrator
+    global search_orchestrator, search_agent
 
     # 启动时初始化
     print("🚀 初始化 E-WebSearch API 服务...")
     try:
         search_orchestrator = SearchOrchestrator()
-        print("✅ 搜索协调器初始化成功")
+        # The search agent requires the llm_enhancer from the orchestrator
+        search_agent = SearchAgent(
+            orchestrator=search_orchestrator,
+            llm_enhancer=search_orchestrator.llm_enhancer,
+        )
+        print("✅ 搜索协调器和搜索代理初始化成功")
     except Exception as e:
-        print(f"❌ 搜索协调器初始化失败: {e}")
+        print(f"❌ 服务初始化失败: {e}")
         traceback.print_exc()
         search_orchestrator = None
+        search_agent = None
 
     yield
 
     # 关闭时清理
     print("🔄 关闭 E-WebSearch API 服务...")
+    if search_agent:
+        await search_agent.close()
+        print("✅ 搜索代理已关闭")
     if search_orchestrator:
         await search_orchestrator.close()
         print("✅ 搜索协调器已关闭")
@@ -98,6 +112,16 @@ def get_orchestrator():
             detail="搜索服务暂时不可用，请稍后重试",
         )
     return search_orchestrator
+
+
+def get_agent():
+    """获取搜索代理实例"""
+    if search_agent is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="搜索代理服务暂时不可用，请稍后重试",
+        )
+    return search_agent
 
 
 def convert_source_type(source: SourceTypeAPI):
@@ -319,6 +343,30 @@ async def search(request: SearchRequestAPI, orchestrator=Depends(get_orchestrato
             execution_time=time.time() - start_time,
             sources_used=[],
             cache_hit=False,
+        )
+
+
+@app.post("/agent_search", response_model=AgentSearchResponse)
+async def agent_search(
+    request: AgentSearchRequest, agent: SearchAgent = Depends(get_agent)
+):
+    """
+    使用 Agent 模式执行复杂的研究任务
+    """
+    try:
+        response = await agent.run(request)
+        return response
+    except Exception as e:
+        error_message = f"Agent search failed: {str(e)}"
+        print(f"❌ {error_message}")
+        traceback.print_exc()
+        return AgentSearchResponse(
+            success=False,
+            final_answer="",
+            intermediate_steps=[],
+            query=request.query,
+            execution_time=0, # This might need adjustment
+            error_message=error_message,
         )
 
 
