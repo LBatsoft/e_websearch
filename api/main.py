@@ -28,7 +28,7 @@ else:
 
 from core.models import SearchRequest, SourceType
 from core.search_orchestrator import SearchOrchestrator
-from core.search_agent import SearchAgent
+from core.agent.search_agent import SearchAgent
 from core.llm_enhancer import LLMEnhancer
 
 from .models import (
@@ -46,6 +46,9 @@ from .models import (
     SuggestionsResponse,
 )
 
+# 导入 Agent API 路由
+from .agent_api import agent_router, init_search_agent, close_search_agent
+
 # 全局变量
 search_orchestrator = None
 search_agent = None
@@ -60,25 +63,19 @@ async def lifespan(app: FastAPI):
     print("🚀 初始化 E-WebSearch API 服务...")
     try:
         search_orchestrator = SearchOrchestrator()
-        # The search agent requires the llm_enhancer from the orchestrator
-        search_agent = SearchAgent(
-            orchestrator=search_orchestrator,
-            llm_enhancer=search_orchestrator.llm_enhancer,
-        )
+        # 初始化 Agent API
+        init_search_agent(search_orchestrator)
         print("✅ 搜索协调器和搜索代理初始化成功")
     except Exception as e:
         print(f"❌ 服务初始化失败: {e}")
         traceback.print_exc()
         search_orchestrator = None
-        search_agent = None
 
     yield
 
     # 关闭时清理
     print("🔄 关闭 E-WebSearch API 服务...")
-    if search_agent:
-        await search_agent.close()
-        print("✅ 搜索代理已关闭")
+    await close_search_agent()
     if search_orchestrator:
         await search_orchestrator.close()
         print("✅ 搜索协调器已关闭")
@@ -102,6 +99,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 包含 Agent API 路由
+app.include_router(agent_router)
 
 
 def get_orchestrator():
