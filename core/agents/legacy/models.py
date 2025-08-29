@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from datetime import datetime
 
-from ..models import SearchResult, SourceType
+from ...models import SearchResult, SourceType
 
 
 class ExecutionStatus(Enum):

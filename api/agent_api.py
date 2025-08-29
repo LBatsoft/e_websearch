@@ -9,10 +9,11 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from loguru import logger
 
-from core.agent import SearchAgent
+from core.agents.legacy.search_agent import SearchAgent
+from core.agents import MultiAgentSearchSystem
 from core.search_orchestrator import SearchOrchestrator
 from core.models import SourceType
-from core.agent.models import (
+from core.agents.base.models import (
     AgentSearchRequest,
     PlanningStrategy,
     ExecutionStatus,
@@ -40,8 +41,9 @@ from .agent_models import (
 # 创建路由器
 agent_router = APIRouter(prefix="/agent", tags=["Search Agent"])
 
-# 全局 Search Agent 实例
+# 全局 Agent 实例
 search_agent: Optional[SearchAgent] = None
+multi_agent_system: Optional[MultiAgentSearchSystem] = None
 
 
 def get_search_agent():
@@ -55,24 +57,48 @@ def get_search_agent():
     return search_agent
 
 
+def get_multi_agent_system():
+    """获取 Multi Agent System 实例"""
+    global multi_agent_system
+    if multi_agent_system is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Multi Agent System 服务暂时不可用，请稍后重试"
+        )
+    return multi_agent_system
+
+
 def init_search_agent(search_orchestrator: SearchOrchestrator):
-    """初始化 Search Agent"""
-    global search_agent
+    """初始化 Search Agent 和 Multi Agent System"""
+    global search_agent, multi_agent_system
     try:
+        # 初始化单个 Search Agent
         search_agent = SearchAgent(search_orchestrator)
         logger.info("Search Agent API 初始化成功")
+        
+        # 初始化 Multi Agent System
+        multi_agent_system = MultiAgentSearchSystem(search_orchestrator)
+        logger.info("Multi Agent System API 初始化成功")
+        
     except Exception as e:
-        logger.error(f"Search Agent API 初始化失败: {e}")
+        logger.error(f"Agent API 初始化失败: {e}")
         search_agent = None
+        multi_agent_system = None
 
 
 async def close_search_agent():
-    """关闭 Search Agent"""
-    global search_agent
+    """关闭所有 Agent 系统"""
+    global search_agent, multi_agent_system
+    
     if search_agent:
         await search_agent.close()
         search_agent = None
         logger.info("Search Agent API 已关闭")
+    
+    if multi_agent_system:
+        await multi_agent_system.close()
+        multi_agent_system = None
+        logger.info("Multi Agent System API 已关闭")
 
 
 def convert_api_to_internal_request(api_request: AgentSearchRequestAPI) -> AgentSearchRequest:
@@ -424,27 +450,195 @@ async def get_performance_metrics(
         raise HTTPException(status_code=500, detail=f"获取性能指标失败: {str(e)}")
 
 
+# Multi Agent 端点
+@agent_router.post("/multi-search", response_model=AgentSearchResponseAPI)
+async def multi_agent_search(
+    request: AgentSearchRequestAPI,
+    multi_agent: MultiAgentSearchSystem = Depends(get_multi_agent_system)
+):
+    """执行多智能体搜索"""
+    try:
+        # 转换请求
+        internal_request = convert_api_to_internal_request(request)
+        
+        # 执行多智能体搜索
+        internal_response = await multi_agent.search(internal_request)
+        
+        # 转换响应
+        api_response = convert_internal_to_api_response(internal_response)
+        
+        return api_response
+        
+    except Exception as e:
+        logger.error(f"Multi Agent 搜索失败: {e}")
+        raise HTTPException(status_code=500, detail=f"多智能体搜索执行失败: {str(e)}")
+
+
+@agent_router.get("/multi-search/{session_id}/status", response_model=SearchStatusResponseAPI)
+async def get_multi_agent_search_status(
+    session_id: str,
+    multi_agent: MultiAgentSearchSystem = Depends(get_multi_agent_system)
+):
+    """获取多智能体搜索状态"""
+    try:
+        status = await multi_agent.get_search_status(session_id)
+        
+        if not status:
+            raise HTTPException(status_code=404, detail="会话不存在")
+        
+        return SearchStatusResponseAPI(
+            success=True,
+            session_id=session_id,
+            status=ExecutionStatusAPI(status["status"]),
+            progress=status.get("progress", 1.0),  # Multi-agent 通常是并行的
+            current_step=status.get("current_step"),
+            results_count=status.get("results_count", 0),
+            execution_time=status["execution_time"],
+            errors=status.get("errors", []),
+            message="多智能体状态获取成功",
+            metadata={
+                "multi_agent": status.get("multi_agent", True),
+                "active_agents": status.get("active_agents", []),
+                "task_count": status.get("task_count", 0),
+                "completed_tasks": status.get("completed_tasks", 0),
+                "failed_tasks": status.get("failed_tasks", 0),
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取多智能体搜索状态失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取状态失败: {str(e)}")
+
+
+@agent_router.post("/multi-search/{session_id}/cancel", response_model=CancelSearchResponseAPI)
+async def cancel_multi_agent_search(
+    session_id: str,
+    multi_agent: MultiAgentSearchSystem = Depends(get_multi_agent_system)
+):
+    """取消多智能体搜索"""
+    try:
+        success = await multi_agent.cancel_search(session_id)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="会话不存在或无法取消")
+        
+        return CancelSearchResponseAPI(
+            success=True,
+            session_id=session_id,
+            message="多智能体搜索已取消",
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"取消多智能体搜索失败: {e}")
+        raise HTTPException(status_code=500, detail=f"取消搜索失败: {str(e)}")
+
+
+@agent_router.get("/multi-search/{session_id}/trace", response_model=ExecutionTraceResponseAPI)
+async def get_multi_agent_execution_trace(
+    session_id: str,
+    multi_agent: MultiAgentSearchSystem = Depends(get_multi_agent_system)
+):
+    """获取多智能体执行追踪记录"""
+    try:
+        trace_events = await multi_agent.get_execution_trace(session_id)
+        # 多智能体系统的追踪摘要
+        trace_summary = {
+            "total_events": len(trace_events),
+            "multi_agent": True,
+            "session_type": "multi_agent",
+        }
+        
+        return ExecutionTraceResponseAPI(
+            success=True,
+            session_id=session_id,
+            trace_events=trace_events,
+            trace_summary=trace_summary,
+        )
+        
+    except Exception as e:
+        logger.error(f"获取多智能体执行追踪失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取追踪记录失败: {str(e)}")
+
+
+@agent_router.get("/multi-search/{session_id}/metrics", response_model=PerformanceMetricsResponseAPI)
+async def get_multi_agent_performance_metrics(
+    session_id: str,
+    multi_agent: MultiAgentSearchSystem = Depends(get_multi_agent_system)
+):
+    """获取多智能体性能指标"""
+    try:
+        metrics = await multi_agent.get_performance_metrics(session_id)
+        
+        return PerformanceMetricsResponseAPI(
+            success=True,
+            session_id=session_id,
+            metrics=metrics,
+        )
+        
+    except Exception as e:
+        logger.error(f"获取多智能体性能指标失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取性能指标失败: {str(e)}")
+
+
+@agent_router.get("/system-info")
+async def get_system_info():
+    """获取系统信息"""
+    try:
+        single_agent_info = {"available": search_agent is not None}
+        multi_agent_info = {"available": multi_agent_system is not None}
+        
+        if multi_agent_system:
+            multi_agent_info.update(multi_agent_system.get_system_info())
+        
+        return {
+            "single_agent": single_agent_info,
+            "multi_agent": multi_agent_info,
+            "default_mode": "multi_agent",
+            "version": "2.0.0",
+        }
+        
+    except Exception as e:
+        return {
+            "error": str(e),
+            "single_agent": {"available": False},
+            "multi_agent": {"available": False},
+        }
+
+
 @agent_router.get("/health")
 async def agent_health_check():
     """Agent 健康检查"""
     try:
-        agent = get_search_agent()
+        single_agent_status = "healthy" if search_agent else "unavailable"
+        multi_agent_status = "healthy" if multi_agent_system else "unavailable"
+        
+        overall_status = "healthy" if (search_agent or multi_agent_system) else "unhealthy"
         
         return {
-            "status": "healthy",
-            "service": "Search Agent",
-            "version": "1.0.0",
+            "status": overall_status,
+            "service": "Agent System",
+            "version": "2.0.0",
+            "modes": {
+                "single_agent": single_agent_status,
+                "multi_agent": multi_agent_status,
+            },
             "features": {
                 "planning": True,
                 "execution": True,
                 "tools": True,
                 "observability": True,
+                "parallel_processing": multi_agent_system is not None,
+                "specialized_agents": multi_agent_system is not None,
             }
         }
         
     except Exception as e:
         return {
             "status": "unhealthy",
-            "service": "Search Agent",
+            "service": "Agent System",
             "error": str(e),
         }

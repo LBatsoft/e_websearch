@@ -467,6 +467,38 @@ class LLMEnhancer:
         else:
             return self.available_providers.get(provider_name)
 
+    async def generate_summary(
+        self,
+        results: List[SearchResult],
+        query: str,
+        language: str = "zh"
+    ) -> str | None:
+        """为搜索结果生成摘要"""
+        options = {
+            "llm_summary": True,
+            "llm_tags": False,
+            "llm_per_result": False,
+            "language": language,
+        }
+        summary, _, _ = await self.enhance(results, query, options)
+        return summary
+
+    async def generate_tags(
+        self,
+        results: List[SearchResult],
+        query: str,
+        language: str = "zh"
+    ) -> List[str]:
+        """为搜索结果生成标签"""
+        options = {
+            "llm_summary": False,
+            "llm_tags": True,
+            "llm_per_result": False,
+            "language": language,
+        }
+        _, tags, _ = await self.enhance(results, query, options)
+        return tags
+
     async def enhance(
         self,
         results: List[SearchResult],

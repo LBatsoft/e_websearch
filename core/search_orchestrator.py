@@ -8,6 +8,9 @@ from typing import Dict, List
 
 from loguru import logger
 
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
 from config import CACHE_TYPE, get_cache_config
 from core.cache_manager import BaseCacheManager, CacheManagerFactory
 from core.content_extractor import ContentExtractor

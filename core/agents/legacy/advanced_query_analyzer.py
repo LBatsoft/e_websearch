@@ -42,7 +42,7 @@ except ImportError:
     TRANSFORMERS_AVAILABLE = False
     logger.warning("transformers 不可用，将使用基础分析功能")
 
-from ..llm_enhancer import LLMEnhancer
+from ...llm_enhancer import LLMEnhancer
 
 
 @dataclass
@@ -396,11 +396,21 @@ class LLMQueryAnalyzer:
             
             if response:
                 # 尝试解析JSON响应
-                json_match = re.search(r'\{.*\}', response, re.DOTALL)
-                if json_match:
-                    return json.loads(json_match.group())
-                else:
-                    return {"raw_response": response}
+                try:
+                    # 1. 尝试直接解析整个响应
+                    return json.loads(response)
+                except json.JSONDecodeError:
+                    try:
+                        # 2. 尝试提取JSON部分
+                        json_match = re.search(r'\{[\s\S]*\}', response)
+                        if json_match:
+                            return json.loads(json_match.group())
+                    except (json.JSONDecodeError, AttributeError):
+                        # 3. 如果都失败了，返回原始响应
+                        return {
+                            "raw_response": response,
+                            "error": "无法解析JSON响应"
+                        }
         except Exception as e:
             logger.error(f"LLM Chain-of-Thought分析失败: {e}")
             return {}
@@ -460,9 +470,21 @@ class LLMQueryAnalyzer:
             )
             
             if response:
-                json_match = re.search(r'\{.*\}', response, re.DOTALL)
-                if json_match:
-                    return json.loads(json_match.group())
+                try:
+                    # 1. 尝试直接解析整个响应
+                    return json.loads(response)
+                except json.JSONDecodeError:
+                    try:
+                        # 2. 尝试提取JSON部分
+                        json_match = re.search(r'\{[\s\S]*\}', response)
+                        if json_match:
+                            return json.loads(json_match.group())
+                    except (json.JSONDecodeError, AttributeError):
+                        # 3. 如果都失败了，返回原始响应
+                        return {
+                            "raw_response": response,
+                            "error": "无法解析JSON响应"
+                        }
         except Exception as e:
             logger.error(f"LLM Few-shot分析失败: {e}")
             return {}

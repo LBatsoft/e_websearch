@@ -10,8 +10,8 @@ import uuid
 from typing import Dict, List, Optional, Tuple
 from loguru import logger
 
-from ..search_orchestrator import SearchOrchestrator
-from ..models import SearchRequest, SearchResult, SourceType
+from ...search_orchestrator import SearchOrchestrator
+from ...models import SearchRequest, SearchResult, SourceType
 from .models import (
     AgentSearchRequest,
     ExecutionPlan,

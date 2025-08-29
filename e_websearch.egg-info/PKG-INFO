@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: e_websearch
+Version: 0.1.0
+Requires-Dist: loguru
+Requires-Dist: pytest
+Requires-Dist: pytest-asyncio
+Dynamic: requires-dist

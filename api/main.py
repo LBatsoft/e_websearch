@@ -28,7 +28,7 @@ else:
 
 from core.models import SearchRequest, SourceType
 from core.search_orchestrator import SearchOrchestrator
-from core.agent.search_agent import SearchAgent
+from core.agents.legacy.search_agent import SearchAgent
 from core.llm_enhancer import LLMEnhancer
 
 from .models import (
@@ -46,12 +46,14 @@ from .models import (
     SuggestionsResponse,
 )
 
-# 导入 Agent API 路由
-from .agent_api import agent_router, init_search_agent, close_search_agent
+# 导入 Agent API 路由和变量
+from .agent_api import (
+    agent_router, init_search_agent, close_search_agent,
+    search_agent, multi_agent_system
+)
 
 # 全局变量
 search_orchestrator = None
-search_agent = None
 
 
 @asynccontextmanager
@@ -116,6 +118,7 @@ def get_orchestrator():
 
 def get_agent():
     """获取搜索代理实例"""
+    from .agent_api import search_agent
     if search_agent is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -354,7 +357,7 @@ async def agent_search(
     使用 Agent 模式执行复杂的研究任务
     """
     try:
-        response = await agent.run(request)
+        response = await agent.search(request)
         return response
     except Exception as e:
         error_message = f"Agent search failed: {str(e)}"

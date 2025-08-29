@@ -9,8 +9,8 @@ import uuid
 from typing import Dict, List, Optional, Tuple
 from loguru import logger
 
-from ..llm_enhancer import LLMEnhancer
-from ..models import SourceType
+from ...llm_enhancer import LLMEnhancer
+from ...models import SourceType
 from .models import (
     AgentSearchRequest,
     ExecutionPlan,

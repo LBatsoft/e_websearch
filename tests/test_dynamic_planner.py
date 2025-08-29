@@ -15,8 +15,8 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 try:
-    from core.agent.planner import SearchPlanner
-    from core.agent.models import AgentSearchRequest, PlanningStrategy
+    from core.agents.legacy.planner import SearchPlanner
+    from core.agents.base.models import AgentSearchRequest, PlanningStrategy
     from core.models import SourceType
     from core.llm_enhancer import LLMEnhancer
 except ImportError as e:

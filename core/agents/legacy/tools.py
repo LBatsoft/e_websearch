@@ -10,8 +10,8 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 from collections import Counter
 from loguru import logger
 
-from ..models import SearchResult, SourceType
-from ..llm_enhancer import LLMEnhancer
+from ...models import SearchResult, SourceType
+from ...llm_enhancer import LLMEnhancer
 
 
 class SearchTools:
@@ -23,7 +23,7 @@ class SearchTools:
     async def multi_source_search(self, query: str, sources: List[SourceType], 
                                 max_results: int = 10) -> List[SearchResult]:
         """多源搜索"""
-        from ..models import SearchRequest
+        from ...models import SearchRequest
         
         request = SearchRequest(
             query=query,

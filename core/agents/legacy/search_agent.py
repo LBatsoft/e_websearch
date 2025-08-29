@@ -10,8 +10,8 @@ import uuid
 from typing import Dict, List, Optional, Any
 from loguru import logger
 
-from ..search_orchestrator import SearchOrchestrator
-from ..llm_enhancer import LLMEnhancer
+from ...search_orchestrator import SearchOrchestrator
+from ...llm_enhancer import LLMEnhancer
 from .models import (
     AgentSearchRequest,
     AgentSearchResponse,
