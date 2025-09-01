@@ -15,6 +15,9 @@ from ..base.models import (
     AgentSearchRequest,
     AgentSearchResponse,
     ExecutionStatus,
+    ExecutionState,
+    ExecutionPlan,
+    PlanningStrategy,
     AgentResult,
     AgentType,
     TaskType,
@@ -90,10 +93,30 @@ class MultiAgentCoordinator:
             error_msg = f"多智能体搜索失败: {str(e)}"
             logger.error(error_msg)
             
+            # 创建失败的执行计划和状态
+            execution_plan = ExecutionPlan(
+                plan_id=f"multi_agent_plan_{session_id}",
+                original_query=request.query,
+                strategy=request.planning_strategy,
+                steps=[]
+            )
+            
+            execution_state = ExecutionState(
+                session_id=session_id,
+                request=request,
+                plan=execution_plan,
+                status=ExecutionStatus.FAILED,
+                start_time=start_time,
+                end_time=float(time.time()),
+                total_execution_time=float(time.time()) - start_time,
+                errors=[error_msg]
+            )
+
             return AgentSearchResponse(
                 success=False,
                 session_id=session_id,
                 message=error_msg,
+                execution_state=execution_state,
                 total_execution_time=float(time.time()) - start_time,
                 errors=[error_msg],
             )
@@ -219,11 +242,34 @@ class MultiAgentCoordinator:
                 )
             }
         
+        # 创建执行计划
+        execution_plan = ExecutionPlan(
+            plan_id=f"multi_agent_plan_{session_id}",
+            original_query=request.query,
+            strategy=request.planning_strategy,
+            steps=[]
+        )
+        
+        # 创建执行状态
+        execution_state = ExecutionState(
+            session_id=session_id,
+            request=request,
+            plan=execution_plan,
+            status=ExecutionStatus.COMPLETED,
+            start_time=start_time,
+            end_time=float(time.time()),
+            total_execution_time=total_time,
+            total_searches=len([t for t in self.tasks.values() if t.task_type == TaskType.SEARCH]),
+            total_results_found=len(agent_results),
+            cache_hits=0,
+        )
+
         # 构建响应
         response = AgentSearchResponse(
             success=True,
             session_id=session_id,
             message="多智能体搜索完成",
+            execution_state=execution_state,
             results=agent_results,
             total_count=len(agent_results),
             original_query=request.query,

@@ -9,7 +9,7 @@ import time
 from typing import Dict, Any
 from loguru import logger
 
-from .base.models import AgentSearchRequest, AgentSearchResponse, ExecutionState, ExecutionStatus, ExecutionPlan
+from .base.models import AgentSearchRequest, AgentSearchResponse, ExecutionState, ExecutionStatus, ExecutionPlan, PlanningStrategy
 from .coordination.coordinator import MultiAgentCoordinator
 from .base.observability import ExecutionTracer, PerformanceMonitor, ResultLogger
 from ..search_orchestrator import SearchOrchestrator
@@ -45,17 +45,16 @@ class MultiAgentSearchSystem:
         
         logger.info(f"开始多智能体搜索: {request.query} [会话: {session_id}]")
         
+        response = None
         try:
             # 执行多智能体搜索
             response = await self.coordinator.execute_multi_agent_search(request)
             
             # 记录最终结果
-            self.logger.log_final_results(session_id, {
-                "success": response.success,
-                "result_count": response.total_count,
-                "execution_time": response.total_execution_time,
-                "agents_used": response.metadata.get("agents_used", []) if response.metadata else []
-            })
+            if hasattr(response, 'execution_state') and response.execution_state:
+                self.logger.log_final_results(session_id, response.execution_state)
+            else:
+                logger.warning(f"响应缺少execution_state，跳过最终结果记录: {session_id}")
             
             logger.info(f"多智能体搜索完成: {session_id}, 耗时: {response.total_execution_time:.2f}s")
             return response
@@ -69,9 +68,18 @@ class MultiAgentSearchSystem:
             final_state = ExecutionState(
                 session_id=session_id,
                 request=request,
-                plan=ExecutionPlan(steps=[])
+                plan=ExecutionPlan(
+                    plan_id=f"final_{session_id}",
+                    original_query=request.query,
+                    strategy=request.planning_strategy,
+                    steps=[]
+                )
             )
-            final_state.status = ExecutionStatus.COMPLETED if response.success else ExecutionStatus.FAILED
+            # 安全地设置状态
+            if response and hasattr(response, 'success'):
+                final_state.status = ExecutionStatus.COMPLETED if response.success else ExecutionStatus.FAILED
+            else:
+                final_state.status = ExecutionStatus.FAILED
             final_state.end_time = time.time()
             self.tracer.end_session(session_id, final_state)
     
